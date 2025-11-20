@@ -1,16 +1,9 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import MainPage from "./pages/product/MainPage";
-import LoginPage from "./pages/auth/LoginPage";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import router from "./routes/AppRouter";
+// import SignupPage from './pages/auth/SignupPage';  // ← 주석 처리
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MainPage />} />
-        <Route path="/login" element={<LoginPage />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

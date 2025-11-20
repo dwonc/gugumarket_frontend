@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css"; // ✅ 이게 있는지 확인!
-import App from "./App.jsx";
+import "./index.css";
+import App from "./App.jsx"; // ✅ 경로 확인
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

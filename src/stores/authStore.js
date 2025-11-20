@@ -16,6 +16,7 @@ const useAuthStore = create(
           user: loginData.user,
           accessToken: loginData.accessToken,
           refreshToken: loginData.refreshToken,
+          role: loginData.role,
           isAuthenticated: true,
         }),
 
