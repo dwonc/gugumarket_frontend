@@ -76,15 +76,20 @@ const ProductTable = ({ products, onRefresh }) => {
               className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all"
             >
               <div className="flex gap-4">
-                <img
-                  src={product.mainImage || "https://via.placeholder.com/80"}
-                  alt={product.title}
-                  className="w-20 h-20 object-cover rounded-lg"
-                  onError={(e) => {
-                    e.target.src =
-                      "https://via.placeholder.com/80/6B4F4F/FFFFFF?text=No+Image";
-                  }}
-                />
+                {product.mainImage ? (
+                  <img
+                    src={product.mainImage}
+                    alt={product.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-primary flex items-center justify-center">
+                    <i className="bi bi-image text-white text-2xl"></i>
+                  </div>
+                )}
                 <div className="flex-1">
                   <h4 className="font-bold text-gray-800 mb-1">
                     {product.title}

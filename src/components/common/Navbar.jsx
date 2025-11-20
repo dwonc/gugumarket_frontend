@@ -8,12 +8,6 @@ const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  console.log("=== Navbar Debug ===");
-  console.log("isAuthenticated:", isAuthenticated);
-  console.log("user:", user);
-  console.log("user?.userName:", user?.userName);
-  console.log("user?.nickname:", user?.nickname);
-
   // ✅ 알림 개수 가져오기
   useEffect(() => {
     if (isAuthenticated) {
