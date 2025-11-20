@@ -13,10 +13,9 @@ const useAuthStore = create(
       // Actions
       login: (loginData) =>
         set({
-          user: loginData.user,
+          user: loginData.user, // ✅ user 객체에 role이 포함되어 있음
           accessToken: loginData.accessToken,
           refreshToken: loginData.refreshToken,
-          role: loginData.role,
           isAuthenticated: true,
         }),
 
@@ -39,7 +38,7 @@ const useAuthStore = create(
     {
       name: "auth-storage",
       partialize: (state) => ({
-        user: state.user, // ✅ 추가!
+        user: state.user, // ✅ user 객체에 role 포함
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,

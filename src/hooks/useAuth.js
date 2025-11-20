@@ -11,10 +11,11 @@ const useAuth = () => {
       const response = await authApi.login(credentials);
       const { data } = response.data;
 
+      // ✅ 백엔드 응답 구조에 맞게 매핑
       login({
         user: {
-          username: data.username,
-          nickname: data.nickname, // ✅ 추가!
+          userName: data.username, // ✅ username → userName
+          nickname: data.username, // ✅ username을 nickname으로도 사용
           email: data.email,
           role: data.role,
         },
@@ -22,7 +23,13 @@ const useAuth = () => {
         refreshToken: data.refreshToken,
       });
 
-      navigate("/");
+      // 관리자면 관리자 페이지로
+      if (data.role === "ADMIN") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
+
       return { success: true };
     } catch (error) {
       return {
