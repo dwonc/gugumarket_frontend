@@ -14,6 +14,7 @@ const useAuth = () => {
       login({
         user: {
           username: data.username,
+          nickname: data.nickname, // ✅ 추가!
           email: data.email,
           role: data.role,
         },

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
+import NotificationBell from "../notification/NotificationBell"; // ✅ import 있음
 
 const Navbar = () => {
   const { isAuthenticated, user, handleLogout } = useAuth();
@@ -76,14 +77,8 @@ const Navbar = () => {
                   >
                     마이페이지
                   </Link>
-                  <Link
-                    to="/notifications"
-                    className="text-gray-700 hover:text-primary font-medium transition-colors relative"
-                  >
-                    <i className="bi bi-bell text-xl"></i>
-                    {/* 알림 뱃지 (옵션) */}
-                    {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span> */}
-                  </Link>
+                  {/* ✅ 기존 Link를 NotificationBell로 교체 */}
+                  <NotificationBell />
                 </>
               )}
               <Link
