@@ -1,9 +1,15 @@
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import router from "./routes/AppRouter";
-// import SignupPage from './pages/auth/SignupPage';  // ← 주석 처리
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import MainPage from "./pages/MainPage";
+import "./App.css";
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainPage />} />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;
