@@ -59,12 +59,17 @@ const ProductCard = ({ product, onLikeUpdate }) => {
       <div className="relative overflow-hidden">
         <Link to={`/products/${product.productId}`}>
           <img
-            src={product.thumbnailImageUrl || product.mainImage}
+            src={
+              product.thumbnailImageUrl ||
+              product.mainImage ||
+              "https://placehold.co/400x300/6B4F4F/FFFFFF?text=No+Image"
+            }
             alt={product.productName || product.title}
             className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
             onError={(e) => {
+              e.target.onerror = null; // 무한 루프 방지
               e.target.src =
-                "https://via.placeholder.com/400x300/6B4F4F/FFFFFF?text=No+Image";
+                "https://placehold.co/400x300/6B4F4F/FFFFFF?text=No+Image";
             }}
           />
         </Link>
