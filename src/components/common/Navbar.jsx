@@ -152,6 +152,17 @@ const Navbar = () => {
                 Q&A
               </Link>
 
+              {/* ✅ 상품 등록 버튼 (로그인한 사용자만) */}
+              {isAuthenticated && (
+                <Link
+                  to="/products/write"
+                  className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold hover:bg-secondary transition-all duration-300 shadow-md hover:shadow-lg flex items-center space-x-2"
+                >
+                  <i className="bi bi-plus-circle"></i>
+                  <span>상품 등록</span>
+                </Link>
+              )}
+
               {/* 관리자 메뉴 */}
               {user?.role === "ADMIN" && (
                 <Link
