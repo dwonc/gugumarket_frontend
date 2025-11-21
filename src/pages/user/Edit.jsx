@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
 import { userApi } from "../../api/userApi";
 import Navbar from "../../components/common/Navbar";
@@ -45,7 +45,7 @@ const InputField = React.memo(({
 
 const Edit = () => {
     const navigate = useNavigate();
-    const { isAuthenticated, user, logout, updateUser } = useAuthStore();
+    const { isAuthenticated,logout, updateUser } = useAuthStore();
 
     const [formData, setFormData] = useState({
         nickname: '',
@@ -241,7 +241,20 @@ const Edit = () => {
                 setSuccessMessage(response.data.message || "회원정보가 성공적으로 수정되었습니다.");
 
                 const updatedUser = response.data.user;
+
+                console.log("📸 서버 응답:", response.data);
+                console.log("📸 업데이트된 사용자 정보:", updatedUser); // 디버깅용
+
+
+                // ✅ Zustand store 업데이트 (타임스탬프 포함)
                 updateUser(updatedUser);
+
+                // 로컬 상태만 타임스탬프 포함 (Edit 페이지 미리보기용)
+                if (updatedUser.profileImage) {
+                    setProfileImageUrl(`${updatedUser.profileImage}?t=${Date.now()}`);
+                }
+
+                console.log("📸 프로필 이미지 URL:", updatedUser.profileImage);
 
                 setFormData(prev => ({
                     ...prev,
@@ -250,7 +263,7 @@ const Edit = () => {
                     confirmPassword: ''
                 }));
 
-                setTimeout(() => navigate('/mypage'), 1500);
+                setTimeout(() => navigate('/mypage',{state : {refresh: true}}), 1500);
 
             } else {
                 setError(response.data.message || "회원정보 수정에 실패했습니다.");
@@ -329,7 +342,7 @@ const Edit = () => {
                             <div className="relative">
                                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-primary shadow-lg bg-gray-100">
                                     <img
-                                        src={profileImageUrl}
+                                        src={profileImageUrl || defaultProfileImage}
                                         alt="프로필 이미지"
                                         className="w-full h-full object-cover"
                                     />
@@ -378,7 +391,6 @@ const Edit = () => {
                             </div>
                         </div>
                     </div>
-
                     {/* 기본 정보 섹션 */}
                     <div className="bg-white rounded-2xl shadow-lg p-8">
                         <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link,useLocation } from "react-router-dom";
 import api from "../../api/axios";
 import useAuthStore from "../../stores/authStore";
 import Navbar from "../../components/common/Navbar";
@@ -16,6 +16,7 @@ import UserProfile from "../../components/user/UserProfile";
 
 const MyPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { isAuthenticated, user, logout } = useAuthStore();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -63,7 +64,14 @@ const MyPage = () => {
             // 만약 로그아웃 상태인데 마이페이지에 접근한 경우 리디렉션 처리
             navigate('/login');
         }
-    }, [isAuthenticated, fetchData, navigate]);
+    }, [isAuthenticated, fetchData, navigate,location.state]);
+
+    // ✅ 추가: user가 변경될 때마다 데이터 새로고침
+    useEffect(() => {
+        if (isAuthenticated && user) {
+            fetchData();
+        }
+    }, [user]);
 
     // Tab 전환 함수 (mypage.html의 showTab 로직 반영)
     const showTab = (tabName) => {

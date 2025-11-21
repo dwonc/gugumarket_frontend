@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from "react"; // ✅ memo 추가
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { userApi } from "../../api/userApi";
 import Navbar from "../../components/common/Navbar";
@@ -7,9 +7,8 @@ import ErrorMessage from "../../components/common/ErrorMessage";
 import Loading from "../../components/common/Loading";
 
 // *******************************************************************
-// ✅ 1. InputField 컴포넌트를 함수 외부로 분리하고 React.memo 적용
+// InputField 컴포넌트 (로직 유지)
 // *******************************************************************
-// [주의] 이 컴포넌트는 SignupPage의 state/handler를 직접 참조하지 않고 props로 받도록 수정해야 합니다.
 const InputField = memo(({
                              label,
                              name,
@@ -18,11 +17,11 @@ const InputField = memo(({
                              isRequired = true,
                              rightContent = null,
                              readOnly = false,
-                             value, // ✅ value를 props로 받음
-                             error, // ✅ errors[name] 대신 error 상태를 받음
-                             renderError, // ✅ renderError 함수를 받음
-                             onChange, // ✅ handleChange 함수를 받음
-                             isSubmitting // ✅ isSubmitting 상태를 받음
+                             value,
+                             error,
+                             renderError,
+                             onChange,
+                             isSubmitting
                          }) => (
     <div className="mb-4">
         <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-2">
@@ -33,8 +32,8 @@ const InputField = memo(({
                 id={name}
                 type={type}
                 name={name}
-                value={value} // ✅ props.value 사용
-                onChange={onChange} // ✅ props.onChange 사용
+                value={value}
+                onChange={onChange}
                 placeholder={placeholder}
                 className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-800 ${
                     error ? 'border-red-500' : 'border-gray-200'
@@ -47,8 +46,6 @@ const InputField = memo(({
         {renderError(name)}
     </div>
 ));
-// *******************************************************************
-// *******************************************************************
 
 
 const SignupPage = () => {
@@ -81,21 +78,19 @@ const SignupPage = () => {
         agreePrivacy: false,
     });
 
-    // Daum Postcode API 스크립트 로드
+    // Daum Postcode API 스크립트 로드 (로직 유지)
     useEffect(() => {
         const script = document.createElement("script");
         script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
         document.head.appendChild(script);
     }, []);
 
-    // ✅ 입력 변경 핸들러 (useCallback으로 메모이제이션)
+    // ✅ 입력 변경 핸들러 (최적화 로직 유지)
     const handleChange = useCallback((e) => {
         const { name, value } = e.target;
 
-        // setFormData를 함수 형태로 호출하여 렌더링 최적화
         setFormData(prev => ({ ...prev, [name]: value }));
 
-        // 아이디 변경 시 중복 체크 상태 초기화
         if (name === "userName") {
             setUsernameCheckStatus({
                 isChecked: false,
@@ -104,7 +99,6 @@ const SignupPage = () => {
             });
         }
 
-        // 입력 시 에러 메시지 제거
         setErrors(prev => {
             if (prev[name]) {
                 const newErrors = { ...prev };
@@ -115,7 +109,7 @@ const SignupPage = () => {
         });
     }, []);
 
-    // ✅ 약관 동의 핸들러 (useCallback으로 메모이제이션)
+    // ✅ 약관 동의 핸들러 (로직 유지)
     const handleAgreementChange = useCallback((e) => {
         const { id, checked } = e.target;
         if (id === 'agree-all') {
@@ -125,21 +119,21 @@ const SignupPage = () => {
         }
     }, []);
 
-    // ✅ 에러 메시지 렌더링 함수 (useCallback으로 메모이제이션)
-    // 이 함수는 InputField의 props로 전달되어 사용됩니다.
+    // ✅ 에러 메시지 렌더링 함수 (로직 유지)
     const renderError = useCallback((fieldName) => {
         return errors[fieldName] ? (
             <p className="mt-1 text-sm text-red-500">{errors[fieldName]}</p>
         ) : null;
-    }, [errors]); // errors 상태에만 의존
+    }, [errors]);
 
-    // 아이디 중복 체크 핸들러와 handleSubmit 로직은 변경하지 않습니다.
+// 아이디 중복 체크 핸들러 - 수정된 버전
     const handleCheckUsername = useCallback(async () => {
         if (!formData.userName) {
             setErrors(prev => ({ ...prev, userName: "아이디를 입력해주세요." }));
             return;
         }
-        if (formData.userName.length < 5 || formData.userName.length > 20) {
+        // ✅ 공백 제거를 위해 trim() 적용
+        if (formData.userName.trim().length < 5 || formData.userName.trim().length > 20) {
             setErrors(prev => ({ ...prev, userName: "아이디는 5자 이상 20자 이하로 입력해야 합니다." }));
             return;
         }
@@ -149,7 +143,8 @@ const SignupPage = () => {
         setMessage(null);
 
         try {
-            const response = await userApi.checkUsername(formData.userName);
+            // API 호출 시도 시 trim() 적용
+            const response = await userApi.checkUsername(formData.userName.trim());
             const { isDuplicate, message: apiMessage } = response.data;
 
             setUsernameCheckStatus({
@@ -170,15 +165,18 @@ const SignupPage = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [formData.userName]); // userName에만 의존
+    }, [formData.userName]);
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
         setErrors({});
         setMessage(null);
 
+        const { password, passwordConfirm } = formData;
+
         const newErrors = {};
-        if (formData.password !== formData.passwordConfirm) {
+        // ✅ 비밀번호 일치 확인 (프론트엔드 유효성) - trim() 적용
+        if (password.trim() !== passwordConfirm.trim()) {
             newErrors.passwordConfirm = "비밀번호가 일치하지 않습니다.";
         }
         if (!usernameCheckStatus.isChecked || usernameCheckStatus.isDuplicate) {
@@ -196,9 +194,20 @@ const SignupPage = () => {
 
         setIsSubmitting(true);
 
-        const { passwordConfirm: _, ...dataToSend } = formData; // ✅ ESLint 경고 해결
+        // ✅ 수정 7: dataToSend를 만들기 전에, 모든 문자열 필드의 앞뒤 공백을 제거하여 서버 측 오류를 방지
+        const trimmedDataToSend = Object.keys(formData).reduce((acc, key) => {
+            acc[key] = typeof formData[key] === 'string'
+                ? formData[key].trim()
+                : formData[key];
+            return acc;
+        }, {});
+
+        // 🚨 수정: passwordConfirm을 제거하지 않고 그대로 보냄. (dataToSend = trimmedDataToSend;)
+        // UserDto는 passwordConfirm 필드를 요구합니다 (@NotEmpty).
+        const dataToSend = trimmedDataToSend;
 
         try {
+            // 서버에 passwordConfirm을 포함한 요청을 보냄 (DTO 바인딩 성공 유도)
             const response = await userApi.signup(dataToSend);
 
             if (response.data.success) {
@@ -208,17 +217,26 @@ const SignupPage = () => {
         } catch (error) {
             console.error("회원가입 오류:", error);
 
+            // 🚨 서버 측 오류 응답 처리 강화
             if (error.response?.data) {
-                const { errors: apiErrors, message: apiMessage, field } = error.response.data;
+                const responseData = error.response.data;
+                // UserController.java는 비밀번호 불일치 시 {field: "passwordConfirm", message: "..."} 반환
 
-                if (apiErrors) {
-                    setErrors(apiErrors);
+                if (responseData.errors) {
+                    // Spring Validation 오류 처리 (Field-level errors)
+                    const errorsMap = responseData.errors.map(err => [err.field, err.defaultMessage])
+                        .reduce((acc, [field, msg]) => ({ ...acc, [field]: msg }), {});
+
+                    setErrors(errorsMap);
                     setMessage({ type: "error", text: "입력된 정보를 확인해주세요." });
-                } else if (apiMessage && field === "passwordConfirm") {
-                    setErrors({ passwordConfirm: apiMessage });
-                    setMessage({ type: "error", text: apiMessage });
+
+                } else if (responseData.field || responseData.message) {
+                    // UserController.java에서 직접 반환하는 오류 처리
+                    const field = responseData.field || 'general';
+                    setErrors(prev => ({ ...prev, [field]: responseData.message }));
+                    setMessage({ type: "error", text: responseData.message });
                 } else {
-                    setMessage({ type: "error", text: apiMessage || "회원가입 중 예상치 못한 오류가 발생했습니다." });
+                    setMessage({ type: "error", text: responseData.message || "회원가입 중 예상치 못한 오류가 발생했습니다." });
                 }
             } else {
                 setMessage({ type: "error", text: "네트워크 오류가 발생했습니다." });
@@ -226,9 +244,9 @@ const SignupPage = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [formData, usernameCheckStatus, agreements, navigate]);
+    }, [formData, usernameCheckStatus, agreements, navigate]); // ✅ formData 의존성 유지 (useRef가 제거되었으므로)
 
-    // ✅ 주소 검색 함수 (useCallback으로 메모이제이션)
+    // ✅ 주소 검색 함수 (로직 유지)
     const handleSearchAddress = useCallback(() => {
         if (!window.daum || !window.daum.Postcode) {
             alert("주소 검색 API가 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
@@ -260,7 +278,6 @@ const SignupPage = () => {
             }
         }).open();
     }, []);
-
 
     // ✅ 중복확인 버튼 메모이제이션
     const checkUsernameButton = useMemo(() => (
@@ -306,11 +323,11 @@ const SignupPage = () => {
                                 name="userName"
                                 placeholder="영문, 숫자 조합 5-20자"
                                 rightContent={checkUsernameButton}
-                                value={formData.userName} // ✅ props 전달
-                                error={errors.userName} // ✅ props 전달
-                                renderError={renderError} // ✅ props 전달
-                                onChange={handleChange} // ✅ props 전달
-                                isSubmitting={isSubmitting} // ✅ props 전달
+                                value={formData.userName}
+                                error={errors.userName}
+                                renderError={renderError}
+                                onChange={handleChange}
+                                isSubmitting={isSubmitting}
                             />
                             {usernameCheckStatus.isChecked && (
                                 <p className={`text-sm -mt-2 ${usernameCheckStatus.isDuplicate ? 'text-red-500' : 'text-green-600'}`}>
