@@ -76,33 +76,40 @@ const ProductTable = ({ products, onRefresh }) => {
               className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all"
             >
               <div className="flex gap-4">
-                {product.mainImage ? (
-                  <img
-                    src={product.mainImage}
-                    alt={product.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-primary flex items-center justify-center">
-                    <i className="bi bi-image text-white text-2xl"></i>
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h4 className="font-bold text-gray-800 mb-1">
+                {/* ✅ 이미지 - 크기 제한 추가 */}
+                <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+                  {product.mainImage ? (
+                    <img
+                      src={product.mainImage}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src =
+                          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' fill='%236B4F4F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='10' fill='white'%3ENo Image%3C/text%3E%3C/svg%3E";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-primary">
+                      <i className="bi bi-image text-white text-xl"></i>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-800 mb-1 truncate">
                     {product.title}
                   </h4>
                   <p className="text-primary font-bold mb-1">
                     {product.price?.toLocaleString()}원
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 truncate">
                     판매자: {product.user?.nickname || "알 수 없음"} | 등록일:{" "}
                     {new Date(product.createdDate).toLocaleDateString("ko-KR")}
                   </p>
                 </div>
-                <div className="flex flex-col justify-between items-end">
+
+                <div className="flex flex-col justify-between items-end flex-shrink-0">
                   {product.isDeleted ? (
                     <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
                       삭제됨

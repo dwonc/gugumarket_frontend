@@ -139,6 +139,10 @@ const AdminPage = () => {
     }
   };
 
+  const handleAnswerChange = (qnaId, value) => {
+    setQnaAnswers({ ...qnaAnswers, [qnaId]: value });
+  };
+
   return (
     <>
       <Navbar />
