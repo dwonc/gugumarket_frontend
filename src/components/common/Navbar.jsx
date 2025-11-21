@@ -8,12 +8,20 @@ const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // ✅ 알림 개수 가져오기
+  // 🔥 디버깅: 컴포넌트 마운트 시 상태 확인
+  useEffect(() => {
+    console.log("📊 Navbar - 인증 상태:", {
+      isAuthenticated,
+      user,
+      hasAccessToken: !!useAuthStore.getState().accessToken,
+    });
+  }, [isAuthenticated, user]);
+
+  // 알림 개수 가져오기
   useEffect(() => {
     if (isAuthenticated) {
       fetchUnreadCount();
 
-      // 30초마다 알림 개수 갱신 (선택사항)
       const interval = setInterval(() => {
         fetchUnreadCount();
       }, 30000);
@@ -30,7 +38,6 @@ const Navbar = () => {
       }
     } catch (error) {
       console.error("알림 개수 조회 실패:", error);
-      // 에러 발생해도 UI는 계속 표시 (0으로 유지)
     }
   };
 
@@ -41,16 +48,15 @@ const Navbar = () => {
 
   return (
     <>
-      {/* Top Bar - 상단 사용자 정보 바 */}
+      {/* Top Bar */}
       <div className="bg-primary text-white py-2">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center text-sm">
-            {/* 왼쪽: 빈 공간 또는 간단한 메시지 */}
             <div>
               {isAuthenticated ? (
                 <span>
                   <i className="bi bi-person-circle mr-2"></i>
-                  {user?.userName || user?.nickname}님
+                  {user?.nickname || user?.userName || "사용자"}님
                 </span>
               ) : (
                 <span>
@@ -60,11 +66,9 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* 오른쪽: 사용자 정보 */}
             <div className="flex items-center space-x-6">
               {isAuthenticated ? (
                 <>
-                  {/* ✅ 알림 */}
                   <Link
                     to="/notifications"
                     className="relative hover:underline flex items-center"
@@ -79,8 +83,6 @@ const Navbar = () => {
                     </div>
                     <span>알림</span>
                   </Link>
-
-                  {/* ✅ 사용자명 (아이콘 없이) */}
 
                   <Link to="/mypage" className="hover:underline">
                     마이페이지
@@ -105,11 +107,10 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Main Navbar - 흰색 배경 메인 네비게이션 */}
+      {/* Main Navbar */}
       <nav className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            {/* 로고 */}
             <Link to="/" className="flex items-center space-x-3 group">
               <img
                 src="/images/gugumarket-logo.png"
@@ -131,7 +132,6 @@ const Navbar = () => {
               </span>
             </Link>
 
-            {/* 메뉴 */}
             <div className="flex items-center space-x-8">
               <Link
                 to="/"
@@ -152,7 +152,6 @@ const Navbar = () => {
                 Q&A
               </Link>
 
-              {/* 관리자 메뉴 */}
               {user?.role === "ADMIN" && (
                 <Link
                   to="/admin"

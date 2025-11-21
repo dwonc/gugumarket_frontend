@@ -1,0 +1,89 @@
+import { useEffect, useState, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
+
+const KakaoCallbackPage = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { handleKakaoCallback } = useAuth();
+  const [error, setError] = useState("");
+  const hasProcessed = useRef(false); // 🔥 중복 실행 방지
+
+  useEffect(() => {
+    // 🔥 이미 처리했으면 리턴
+    if (hasProcessed.current) {
+      console.log("⚠️ 이미 처리됨, 중복 실행 방지");
+      return;
+    }
+
+    const processKakaoLogin = async () => {
+      const code = searchParams.get("code");
+      const errorParam = searchParams.get("error");
+
+      console.log("🔐 카카오 콜백 처리 시작:", { code, errorParam });
+
+      if (errorParam) {
+        setError("카카오 로그인이 취소되었습니다.");
+        setTimeout(() => navigate("/login"), 2000);
+        return;
+      }
+
+      if (!code) {
+        setError("인증 코드가 없습니다.");
+        setTimeout(() => navigate("/login"), 2000);
+        return;
+      }
+
+      // 🔥 처리 시작 플래그 설정
+      hasProcessed.current = true;
+
+      try {
+        console.log("📤 백엔드로 code 전송:", code);
+        const result = await handleKakaoCallback(code);
+
+        console.log("✅ 카카오 로그인 결과:", result);
+
+        if (!result.success) {
+          setError(result.message || "카카오 로그인에 실패했습니다.");
+          hasProcessed.current = false; // 🔥 실패 시 다시 시도 가능하도록
+          setTimeout(() => navigate("/login"), 2000);
+        }
+        // 🔥 성공 시 navigate는 useAuth에서 처리됨
+      } catch (err) {
+        console.error("❌ 카카오 로그인 에러:", err);
+        setError("카카오 로그인 처리 중 오류가 발생했습니다.");
+        hasProcessed.current = false; // 🔥 실패 시 다시 시도 가능하도록
+        setTimeout(() => navigate("/login"), 2000);
+      }
+    };
+
+    processKakaoLogin();
+  }, []); // 🔥 의존성 배열 비우기 (한 번만 실행)
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        {error ? (
+          <div className="space-y-4">
+            <div className="text-6xl">❌</div>
+            <h2 className="text-2xl font-bold text-red-600">로그인 실패</h2>
+            <p className="text-gray-600">{error}</p>
+            <p className="text-sm text-gray-500">
+              로그인 페이지로 이동합니다...
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              카카오 로그인 처리 중...
+            </h2>
+            <p className="text-gray-600">잠시만 기다려주세요</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default KakaoCallbackPage;
