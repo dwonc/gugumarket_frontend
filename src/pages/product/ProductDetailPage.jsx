@@ -406,7 +406,7 @@ const ProductDetailPage = () => {
                     <div className="flex gap-3">
                       <Button
                         onClick={() =>
-                          navigate(`/product/${product.productId}/edit`)
+                          navigate(`/products/${product.productId}/edit`)
                         }
                         variant="outline"
                         className="flex-1"
