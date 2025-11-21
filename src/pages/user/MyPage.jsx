@@ -14,6 +14,17 @@ import UserProfile from "../../components/user/UserProfile";
 //     status (String), transactionDate (LocalDateTime)
 // };
 
+// ✅ 백엔드 기본 URL 설정 (axios.js와 동일하게 환경 변수 사용)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+// primary: #6B4F4F 색상을 배경색으로 사용한 SVG Data URI
+const NO_IMAGE_PLACEHOLDER = 'data:image/svg+xml;base64,' +
+    btoa('<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">' +
+        '<rect width="100%" height="100%" fill="#6B4F4F"/>' + // primary 색상
+        '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" ' +
+        'font-family="sans-serif" font-size="16" fill="#FFFFFF">No Image</text>' +
+        '</svg>');
+
 const MyPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -30,8 +41,8 @@ const MyPage = () => {
         }
     }, [isAuthenticated, navigate]);
 
+    // fetchData에 logout과 navigate 의존성 추가
     const fetchData = useCallback(async () => {
-
         setLoading(true);
         setError(null);
         try {
@@ -55,7 +66,7 @@ const MyPage = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [logout, navigate]); // ✅ 의존성 추가: logout, navigate
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -64,14 +75,7 @@ const MyPage = () => {
             // 만약 로그아웃 상태인데 마이페이지에 접근한 경우 리디렉션 처리
             navigate('/login');
         }
-    }, [isAuthenticated, fetchData, navigate,location.state]);
-
-    // ✅ 추가: user가 변경될 때마다 데이터 새로고침
-    useEffect(() => {
-        if (isAuthenticated && user) {
-            fetchData();
-        }
-    }, [user]);
+    }, [isAuthenticated, fetchData, navigate,location.state, user, loading]);
 
     // Tab 전환 함수 (mypage.html의 showTab 로직 반영)
     const showTab = (tabName) => {
@@ -119,12 +123,25 @@ const MyPage = () => {
     };
 
     // 찜 해제 (mypage.html의 JS 로직 반영)
-    const handleUnlike = async (productId) => {
+    const handleUnlike = useCallback(async (productId) => {
         if (!window.confirm('찜 목록에서 제거하시겠습니까?')) return;
 
+        // ✅ CSRF 토큰 가져오기 및 헤더 설정
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+        const headers = {
+            // Content-Type은 axios.js에 기본 설정되어 있지만, 명시적으로 추가
+            'Content-Type': 'application/json',
+        };
+
+        if (csrfToken && csrfHeader) {
+            headers[csrfHeader] = csrfToken; // 스프링 시큐리티용 CSRF 헤더 추가
+        }
+
         try {
-            // LikeController의 @PostMapping("/like/toggle/{productId}") 가정
-            const res = await api.post(`/like/toggle/${productId}`);
+            // LikeController의 실제 경로: /api/products/{productId}/like
+            const res = await api.post(`/api/products/${productId}/like`, null, { headers: headers });
 
             if (res.status === 200) {
                 // UI에서 즉시 제거
@@ -134,17 +151,36 @@ const MyPage = () => {
             }
         } catch (err) {
             console.error('찜 해제 오류:', err);
-            alert('찜 해제 중 오류가 발생했습니다. 로그인을 확인해주세요.');
+            // 401 에러 처리 (Axios Interceptor에서 1차 처리 후, 최종 실패 시)
+            if (err.response?.status === 401) {
+                alert('세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.');
+                logout();
+                navigate('/login');
+            } else {
+                alert('찜 해제 중 오류가 발생했습니다.');
+            }
         }
-    };
+    }, [data, logout, navigate]); // ✅ 의존성 추가: data, logout, navigate
 
     // 입금 확인 처리 함수 (mypage.html의 JS 로직 반영)
-    const confirmPayment = async (transactionId) => {
+    const confirmPayment = useCallback(async (transactionId) => {
         if (!window.confirm('입금을 확인하셨습니까? 거래를 완료 처리합니다.')) return;
 
+        // ✅ CSRF 토큰 가져오기 (POST 요청이므로 추가)
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+
+        if (csrfToken && csrfHeader) {
+            headers[csrfHeader] = csrfToken;
+        }
+
         try {
-            // TransactionController의 @PostMapping("/transaction/{id}/complete") 가정
-            const response = await api.post(`/transaction/${transactionId}/complete`);
+            // TransactionController의 실제 경로: /api/transactions/{transactionId}/complete
+            const response = await api.post(`/api/transactions/${transactionId}/complete`, null, { headers: headers });
 
             if (response.status === 200) {
                 alert('거래가 완료되었습니다.');
@@ -155,17 +191,35 @@ const MyPage = () => {
             }
         } catch (error) {
             console.error('입금 확인 오류:', error);
-            alert('처리 중 오류가 발생했습니다.');
+            // 401 에러 처리
+            if (error.response?.status === 401) {
+                alert('세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.');
+                logout();
+                navigate('/login');
+            } else {
+                alert('처리 중 오류가 발생했습니다.');
+            }
         }
-    };
+    }, [fetchData, logout, navigate]); // ✅ 의존성 추가: fetchData, logout, navigate
 
     // 알림 읽음 처리 (mypage.html의 JS 로직 반영)
-    const markAsRead = async (notificationId) => {
-        try {
-            // NotificationController의 @PostMapping("/mypage/notifications/{id}/read") 가정
-            await api.post(`/mypage/notifications/${notificationId}/read`);
-            // UI에서 즉시 읽음 처리 (선택적) 또는 새로고침
+    const markAsRead = useCallback(async (notificationId) => {
+        // ✅ CSRF 토큰 가져오기 (POST 요청이므로 추가)
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
 
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+
+        if (csrfToken && csrfHeader) {
+            headers[csrfHeader] = csrfToken;
+        }
+
+        try {
+            // NotificationController의 실제 경로: /api/notifications/{notificationId}/read
+            // PATCH 요청 사용
+            await api.patch(`/api/notifications/${notificationId}/read`, null, { headers: headers });
             // UI 업데이트
             setData(prevData => {
                 const updatedNotifications = prevData.recentNotifications.map(notif =>
@@ -179,8 +233,14 @@ const MyPage = () => {
             });
         } catch (error) {
             console.error('알림 읽음 처리 오류:', error);
+            if (error.response?.status === 401) {
+                alert('세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.');
+                logout();
+                navigate('/login');
+            }
         }
-    };
+    }, [logout, navigate]);
+
 
     // 로딩 상태
     if (loading || !data ) {
@@ -212,6 +272,15 @@ const MyPage = () => {
     // 데이터 구조 분해 (MypageController.java의 응답 구조 사용)
     const { user:apiUser,purchases, sales, likes, recentNotifications, unreadCount } = data;
 
+    // 이미지 경로 생성 헬퍼 함수
+    const getProductImageUrl = (imagePath) => {
+        // ✅ 이미지 경로가 없거나 빈 문자열이면 플레이스홀더 반환
+        if (!imagePath || imagePath.trim() === '') {
+            return NO_IMAGE_PLACEHOLDER;
+        }
+        // ✅ 이미지 경로가 있다면 백엔드 URL을 붙여서 절대 경로로 요청
+        return `${API_BASE_URL}${imagePath}`;
+    };
 
     // --- 탭 콘텐츠 렌더링 함수 ---
 
@@ -224,51 +293,62 @@ const MyPage = () => {
                     purchases.map((transaction) => {
                         const badge = getStatusBadge(transaction.status, false);
                         return (
-                            <div key={transaction.transactionId} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all">
-                                <div className="flex gap-4 items-center">
-                                    {/* 상품 이미지 */}
-                                    <img
-                                        src={transaction.productImage || 'https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image'}
-                                        alt={transaction.productTitle}
-                                        className="w-32 h-32 object-cover rounded-lg"
-                                        onError={(e) => {e.target.onerror = null; e.target.src='https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image'}}
-                                    />
+                            // ✅ Link로 감싸서 거래 상세 페이지로 이동하도록 수정
+                            <Link to={`/transactions/${transaction.transactionId}`} key={transaction.transactionId} className="block">
+                                <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all">
+                                    <div className="flex gap-4 items-center">
+                                        {/* 상품 이미지: getProductImageUrl 헬퍼 함수 적용 */}
+                                        <img
+                                            src={getProductImageUrl(transaction.productImage)}
+                                            alt={transaction.productTitle}
+                                            className="w-32 h-32 object-cover rounded-lg"
+                                            onError={(e) => {e.target.onerror = null; e.target.src=NO_IMAGE_PLACEHOLDER;}}
+                                        />
 
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-gray-800 mb-2">{transaction.productTitle}</h3>
-                                        <p className="text-2xl font-bold text-primary mb-2">
-                                            {formatPrice(transaction.productPrice)}원
-                                        </p>
-                                        <p className="text-gray-600 text-sm mb-1">
-                                            판매자: <span className="font-medium">{transaction.sellerName}</span>
-                                        </p>
-                                        <p className="text-gray-500 text-sm">
-                                            구매일: {formatDate(transaction.transactionDate)}
-                                        </p>
-                                    </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-lg font-bold text-gray-800 mb-2">{transaction.productTitle}</h3>
+                                            <p className="text-2xl font-bold text-primary mb-2">
+                                                {formatPrice(transaction.productPrice)}원
+                                            </p>
+                                            <p className="text-gray-600 text-sm mb-1">
+                                                판매자: <span className="font-medium">{transaction.sellerName}</span>
+                                            </p>
+                                            <p className="text-gray-500 text-sm">
+                                                구매일: {formatDate(transaction.transactionDate)}
+                                            </p>
+                                        </div>
 
-                                    <div className="flex flex-col justify-between items-end h-full">
-                                        {/* 상태 배지 */}
-                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${badge.class}`}>
-                      {badge.text}
-                    </span>
+                                        <div className="flex flex-col justify-between items-end h-full">
+                                            {/* 상태 배지 */}
+                                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${badge.class}`}>
+                                            {badge.text}
+                                        </span>
 
-                                        {/* 상태에 따른 액션 버튼 */}
-                                        <div className="mt-3 space-y-2">
-                                            {transaction.status === 'COMPLETED' && ( // 구매 확정 상태
-                                                <button className="text-gray-600 hover:text-primary text-sm w-full text-right">
-                                                    <i className="bi bi-chat-dots mr-1"></i>문의하기
-                                                </button>
-                                            )}
-                                            {transaction.status === 'PENDING' && ( // 입금 대기 상태
-                                                <button className="text-blue-600 hover:text-blue-800 text-sm w-full text-right font-medium">
-                                                    <i className="bi bi-credit-card mr-1"></i>입금 정보 보기
-                                                </button>
-                                            )}
+                                            {/* 상태에 따른 액션 버튼 */}
+                                            <div className="mt-3 space-y-2">
+                                                {transaction.status === 'COMPLETED' && ( // 구매 확정 상태
+                                                    // Link로 감싸지 않은 버튼은 클릭 이벤트가 따로 작동해야 함.
+                                                    // 여기서는 버튼을 div 안에 두어 Link 클릭을 방해하지 않게 합니다.
+                                                    <button
+                                                        className="text-gray-600 hover:text-primary text-sm w-full text-right"
+                                                        onClick={(e) => e.preventDefault()} // Link 동작 방지
+                                                    >
+                                                        <i className="bi bi-chat-dots mr-1"></i>문의하기
+                                                    </button>
+                                                )}
+                                                {transaction.status === 'PENDING' && ( // 입금 대기 상태
+                                                    <button
+                                                        className="text-blue-600 hover:text-blue-800 text-sm w-full text-right font-medium"
+                                                        onClick={(e) => e.preventDefault()} // Link 동작 방지
+                                                    >
+                                                        <i className="bi bi-credit-card mr-1"></i>입금 정보 보기
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         );
                     })
                 ) : (
@@ -282,7 +362,7 @@ const MyPage = () => {
         </div>
     );
 
-    // 2. 판매내역 탭 렌더링
+// 2. 판매내역 탭 렌더링
     const renderSales = () => (
         <div id="content-sales" className="tab-content">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">판매내역</h2>
@@ -291,54 +371,63 @@ const MyPage = () => {
                     sales.map((transaction) => {
                         const badge = getStatusBadge(transaction.status, true);
                         return (
-                            <div key={transaction.transactionId} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all">
-                                <div className="flex gap-4 items-center">
-                                    {/* 상품 이미지 */}
-                                    <img
-                                        src={transaction.productImage || 'https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image'}
-                                        alt={transaction.productTitle}
-                                        className="w-32 h-32 object-cover rounded-lg"
-                                        onError={(e) => {e.target.onerror = null; e.target.src='https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image'}}
-                                    />
+                            // ✅ Link로 감싸서 거래 상세 페이지로 이동하도록 수정
+                            <Link to={`/transactions/${transaction.transactionId}`} key={transaction.transactionId} className="block">
+                                <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all">
+                                    <div className="flex gap-4 items-center">
+                                        {/* 상품 이미지: getProductImageUrl 헬퍼 함수 적용 */}
+                                        <img
+                                            src={getProductImageUrl(transaction.productImage)}
+                                            alt={transaction.productTitle}
+                                            className="w-32 h-32 object-cover rounded-lg"
+                                            onError={(e) => {e.target.onerror = null; e.target.src=NO_IMAGE_PLACEHOLDER;}}
+                                        />
 
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-gray-800 mb-2">{transaction.productTitle}</h3>
-                                        <p className="text-2xl font-bold text-primary mb-2">
-                                            {formatPrice(transaction.productPrice)}원
-                                        </p>
-                                        <p className="text-gray-600 text-sm mb-1">
-                                            구매자: <span className="font-medium">{transaction.buyerName}</span>
-                                        </p>
-                                        <p className="text-gray-500 text-sm">
-                                            판매일: {formatDate(transaction.transactionDate)}
-                                        </p>
-                                    </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-lg font-bold text-gray-800 mb-2">{transaction.productTitle}</h3>
+                                            <p className="text-2xl font-bold text-primary mb-2">
+                                                {formatPrice(transaction.productPrice)}원
+                                            </p>
+                                            <p className="text-gray-600 text-sm mb-1">
+                                                구매자: <span className="font-medium">{transaction.buyerName}</span>
+                                            </p>
+                                            <p className="text-gray-500 text-sm">
+                                                판매일: {formatDate(transaction.transactionDate)}
+                                            </p>
+                                        </div>
 
-                                    <div className="flex flex-col justify-between items-end h-full">
-                                        {/* 상태 배지 */}
-                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${badge.class}`}>
-                      {badge.text}
-                    </span>
+                                        <div className="flex flex-col justify-between items-end h-full">
+                                            {/* 상태 배지 */}
+                                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${badge.class}`}>
+                                            {badge.text}
+                                        </span>
 
-                                        {/* 상태에 따른 액션 버튼 */}
-                                        <div className="mt-3 space-y-2">
-                                            {transaction.status === 'COMPLETED' && ( // 판매 완료 상태
-                                                <button className="text-gray-600 hover:text-primary text-sm w-full text-right">
-                                                    <i className="bi bi-chat-dots mr-1"></i>문의하기
-                                                </button>
-                                            )}
-                                            {transaction.status === 'PENDING' && ( // 입금 확인 대기 상태
-                                                <button
-                                                    onClick={() => confirmPayment(transaction.transactionId)}
-                                                    className="bg-primary hover:bg-secondary text-white text-sm px-4 py-2 rounded-lg w-full font-medium transition-all"
-                                                >
-                                                    <i className="bi bi-check-circle mr-1"></i>입금 확인하기
-                                                </button>
-                                            )}
+                                            {/* 상태에 따른 액션 버튼 */}
+                                            <div className="mt-3 space-y-2">
+                                                {transaction.status === 'COMPLETED' && ( // 판매 완료 상태
+                                                    <button
+                                                        className="text-gray-600 hover:text-primary text-sm w-full text-right"
+                                                        onClick={(e) => e.preventDefault()} // Link 동작 방지
+                                                    >
+                                                        <i className="bi bi-chat-dots mr-1"></i>문의하기
+                                                    </button>
+                                                )}
+                                                {transaction.status === 'PENDING' && ( // 입금 확인 대기 상태
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault(); // Link 동작 방지
+                                                            confirmPayment(transaction.transactionId);
+                                                        }}
+                                                        className="bg-primary hover:bg-secondary text-white text-sm px-4 py-2 rounded-lg w-full font-medium transition-all"
+                                                    >
+                                                        <i className="bi bi-check-circle mr-1"></i>입금 확인하기
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         );
                     })
                 ) : (
@@ -346,7 +435,8 @@ const MyPage = () => {
                     <div className="text-center py-16">
                         <i className="bi bi-receipt text-6xl text-gray-300 mb-4"></i>
                         <p className="text-gray-500 text-lg">판매내역이 없습니다.</p>
-                        <Button onClick={() => navigate('/product/write')} variant="primary" size="md" className="mt-4">
+                        {/* 상품 등록 페이지로 이동 */}
+                        <Button onClick={() => navigate('/products/write')} variant="primary" size="md" className="mt-4">
                             상품 등록하기
                         </Button>
                     </div>
@@ -364,12 +454,13 @@ const MyPage = () => {
                     likes.map((like) => (
                         <div key={like.likeId} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all group">
                             <div className="relative">
-                                <Link to={`/product/${like.productId}`}>
+                                <Link to={`/products/${like.productId}`}>
+                                    {/* 상품 이미지: getProductImageUrl 헬퍼 함수 적용 */}
                                     <img
-                                        src={like.productImage || 'https://via.placeholder.com/300x200/6B4F4F/FFFFFF?text=No+Image'}
+                                        src={getProductImageUrl(like.productImage)}
                                         alt={like.productTitle}
                                         className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                                        onError={(e) => {e.target.onerror = null; e.target.src='https://via.placeholder.com/300x200/6B4F4F/FFFFFF?text=No+Image'}}
+                                        onError={(e) => {e.target.onerror = null; e.target.src=NO_IMAGE_PLACEHOLDER;}}
                                     />
                                 </Link>
                                 {/* 찜 해제 버튼 */}
@@ -448,7 +539,7 @@ const MyPage = () => {
 
                         return (
                             <div key={notification.notificationId} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all">
-                                <Link to={notification.url} onClick={() => markAsRead(notification.notificationId)} className="block">
+                                <Link to={notification.url.replace('/product/', '/products/').replace('/transaction/', '/transactions/')} onClick={() => markAsRead(notification.notificationId)} className="block">
                                     <div className="flex items-start gap-3">
                                         {/* Icon */}
                                         <div className="flex-shrink-0">

@@ -75,10 +75,10 @@ const router = createBrowserRouter([
       //   path: "/purchase/complete/:transactionId",
       //   element: <PurchaseCompletePage />,
       // },
-      // {
-      //   path: "/transactions/:id",
-      //   element: <TransactionDetailPage />,
-      // },
+     // {
+     //   path: "/transactions/:id",
+     //   element: <TransactionDetailPage />,
+     // },
       {
         path: "/notifications",
         element: <NotificationPage />,
