@@ -8,9 +8,10 @@ import LoginPage from "../pages/auth/LoginPage";
 import SignupPage from "../pages/auth/SignupPage";
 import MyPage from "../pages/user/MyPage";
 import Edit from "../pages/user/Edit";
-// import ProductDetailPage from "../pages/product/ProductDetailPage";
-// import ProductWritePage from "../pages/product/ProductWritePage";
-// import ProductEditPage from "../pages/product/ProductEditPage";
+// // import SignupPage from "../pages/auth/SignupPage";
+import ProductDetailPage from "../pages/product/ProductDetailPage";
+import ProductWritePage from "../pages/product/ProductWritePage";
+import ProductEditPage from "../pages/product/ProductEditPage";
 // import PurchasePage from "../pages/transaction/PurchasePage";
 // import PurchaseCompletePage from "../pages/transaction/PurchaseCompletePage";
 // import TransactionDetailPage from "../pages/transaction/TransactionDetailPage";
@@ -39,11 +40,11 @@ const router = createBrowserRouter([
     path: "/signup",
     element: <SignupPage />,
   },
-  /**
+
   {
     path: "/products/:id",
     element: <ProductDetailPage />,
-  }, **/
+  },
 
   // Private Routes (로그인 필요)
 
@@ -58,14 +59,14 @@ const router = createBrowserRouter([
         path: "/mypage/edit",
         element: <Edit />,
       },
-      // {
-      //   path: "/products/write",
-      //   element: <ProductWritePage />,
-      // },
-      // {
-      //   path: "/products/:id/edit",
-      //   element: <ProductEditPage />,
-      // },
+      {
+        path: "/products/write",
+        element: <ProductWritePage />,
+      },
+      {
+        path: "/products/:id/edit",
+        element: <ProductEditPage />,
+      },
       // {
       //   path: "/products/:id/purchase",
       //   element: <PurchasePage />,
