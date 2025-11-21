@@ -14,8 +14,8 @@ import LoginPage from "../pages/auth/LoginPage";
 // import TransactionDetailPage from "../pages/transaction/TransactionDetailPage";
 // import MyPage from "../pages/user/MyPage";
 import NotificationPage from "../pages/notification/NotificationPage";
-// import QnaListPage from "../pages/qna/QnaListPage";
-// import QnaFormPage from "../pages/qna/QnaFormPage";
+import QnaListPage from "../pages/qna/QnaListPage";
+import QnaFormPage from "../pages/qna/QnaFormPage";
 import AdminPage from "../pages/admin/AdminPage";
 import UserDetailPage from "../pages/admin/UserDetailPage";
 // import ErrorPage from "../pages/ErrorPage";
@@ -73,14 +73,14 @@ const router = createBrowserRouter([
         path: "/notifications",
         element: <NotificationPage />,
       },
-      // {
-      //   path: "/qna",
-      //   element: <QnaListPage />,
-      // },
-      // {
-      //   path: "/qna/write",
-      //   element: <QnaFormPage />,
-      // },
+      {
+        path: "/qna",
+        element: <QnaListPage />,
+      },
+      {
+        path: "/qna/write",
+        element: <QnaFormPage />,
+      },
     ],
   },
 
