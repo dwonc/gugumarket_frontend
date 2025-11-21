@@ -49,6 +49,14 @@ const ProductCard = ({ product, onLikeUpdate }) => {
     return price?.toLocaleString("ko-KR") || "0";
   };
 
+  // ⭐ sellerAddress가 없거나 "위치정보 없음"일 경우 처리
+  const getLocationText = () => {
+    if (!product.sellerAddress || product.sellerAddress === "위치정보 없음") {
+      return "위치 정보 없음";
+    }
+    return product.sellerAddress;
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group">
       <div className="relative overflow-hidden">
@@ -102,7 +110,8 @@ const ProductCard = ({ product, onLikeUpdate }) => {
         <div className="flex items-center justify-between text-sm text-gray-500">
           <span className="flex items-center gap-1">
             <i className="bi bi-geo-alt"></i>
-            <span>{product.sellerAddress || "위치 정보 없음"}</span>
+            {/* ⭐ sellerAddress 직접 사용 */}
+            <span>{getLocationText()}</span>
           </span>
           <span className="flex items-center gap-1">
             <i className="bi bi-eye"></i>
