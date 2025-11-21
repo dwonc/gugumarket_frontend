@@ -25,23 +25,44 @@ const NO_IMAGE_PLACEHOLDER = 'data:image/svg+xml;base64,' +
         'font-family="sans-serif" font-size="16" fill="#FFFFFF">No Image</text>' +
         '</svg>');
 
+// ✅ 이미지 경로 생성 헬퍼 함수 최종 수정: 절대 URL 중복 방지
+const getProductImageUrl = (imagePath) => {
+    // 1. 이미지가 없으면 플레이스홀더 반환
+    if (!imagePath || imagePath.trim() === '') {
+        return NO_IMAGE_PLACEHOLDER;
+    }
+
+    // 2. 🔥 수정된 로직: 경로가 'http://' 또는 'https://'로 시작하면
+    //    이미 절대 경로이므로 그대로 반환합니다.
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+    }
+
+    // 3. (만약 서버가 상대 경로를 보낸다면) Base URL 결합 로직 유지
+    //    API_BASE_URL의 끝 슬래시를 제거 (있든 없든 제거)
+    const baseUrl = API_BASE_URL.replace(/\/$/, "");
+
+    //    imagePath의 시작 슬래시를 제거 (있든 없든 제거)
+    const cleanedPath = imagePath.replace(/^\//, "");
+
+    // 4. 결합
+    return `${baseUrl}/${cleanedPath}`;
+};
+
+
 const MyPage = () => {
     const navigate = useNavigate();
-    const location = useLocation();
-    const { isAuthenticated, user, logout } = useAuthStore();
+    const location = useLocation(); // 👈 location 사용되므로 유지
+    const { isAuthenticated, logout } = useAuthStore();
+
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState("purchases");
 
-    // Zustand에서 가져온 사용자 정보가 없거나 인증되지 않았으면 리디렉션
-    useEffect(() => {
-        if (!isAuthenticated) {
-            navigate("/login");
-        }
-    }, [isAuthenticated, navigate]);
-
-    // fetchData에 logout과 navigate 의존성 추가
+    // ==========================================================
+    // ✅ 1. fetchData 정의 (TDZ/ReferenceError 해결)
+    // ==========================================================
     const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -66,16 +87,30 @@ const MyPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [logout, navigate]); // ✅ 의존성 추가: logout, navigate
+    }, [logout, navigate]); // user와 activeTab은 fetchData 내부 로직에 직접 사용되지 않아 제거
 
+    // ==========================================================
+    // ✅ 2. useEffect로 데이터 로딩 및 리디렉션 처리
+    // ==========================================================
     useEffect(() => {
+        // 인증되었을 때만 데이터 로딩 시작
         if (isAuthenticated) {
             fetchData();
-        } else if (user === null && !isAuthenticated && !loading) {
-            // 만약 로그아웃 상태인데 마이페이지에 접근한 경우 리디렉션 처리
+        }
+        // 인증이 false로 확정되었을 때 로그인 페이지로 이동
+        else if (isAuthenticated === false) {
             navigate('/login');
         }
-    }, [isAuthenticated, fetchData, navigate,location.state, user, loading]);
+    }, [isAuthenticated, fetchData, navigate]);
+
+    // URL 쿼리 파라미터에서 탭 상태를 읽어옴
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tab = params.get('tab');
+        if (tab) {
+            setActiveTab(tab);
+        }
+    }, [location.search]);
 
     // Tab 전환 함수 (mypage.html의 showTab 로직 반영)
     const showTab = (tabName) => {
@@ -113,6 +148,7 @@ const MyPage = () => {
             // 판매내역 (Seller)
             'SELLER_PENDING': { text: '입금 확인 대기', class: 'bg-orange-100 text-orange-700' }, // mypage.html 판매내역
             'SELLER_COMPLETED': { text: '판매 완료', class: 'bg-blue-100 text-blue-700' }, // mypage.html 판매내역
+            'SELLING': { text: '판매 중', class: 'bg-indigo-100 text-indigo-700' }, // ✅ 판매 중 상태 추가
         };
 
         // MypageController의 DTO는 status.name()을 반환함.
@@ -242,8 +278,8 @@ const MyPage = () => {
     }, [logout, navigate]);
 
 
-    // 로딩 상태
-    if (loading || !data ) {
+    // 로딩 상태 (요청하신 대로 유지)
+    if (loading || !data) {
         return (
             <div className="min-h-screen flex flex-col">
                 <Navbar />
@@ -270,17 +306,8 @@ const MyPage = () => {
     }
 
     // 데이터 구조 분해 (MypageController.java의 응답 구조 사용)
-    const { user:apiUser,purchases, sales, likes, recentNotifications, unreadCount } = data;
+    const { user:apiUser,purchases, likes, recentNotifications, unreadCount} = data;
 
-    // 이미지 경로 생성 헬퍼 함수
-    const getProductImageUrl = (imagePath) => {
-        // ✅ 이미지 경로가 없거나 빈 문자열이면 플레이스홀더 반환
-        if (!imagePath || imagePath.trim() === '') {
-            return NO_IMAGE_PLACEHOLDER;
-        }
-        // ✅ 이미지 경로가 있다면 백엔드 URL을 붙여서 절대 경로로 요청
-        return `${API_BASE_URL}${imagePath}`;
-    };
 
     // --- 탭 콘텐츠 렌더링 함수 ---
 
@@ -299,10 +326,15 @@ const MyPage = () => {
                                     <div className="flex gap-4 items-center">
                                         {/* 상품 이미지: getProductImageUrl 헬퍼 함수 적용 */}
                                         <img
-                                            src={getProductImageUrl(transaction.productImage)}
+                                            src={getProductImageUrl(transaction.productImage) || null}
                                             alt={transaction.productTitle}
                                             className="w-32 h-32 object-cover rounded-lg"
-                                            onError={(e) => {e.target.onerror = null; e.target.src=NO_IMAGE_PLACEHOLDER;}}
+                                            onError={(e) => {
+                                                // 이미 에러 처리를 했으면 다시 하지 않도록 막음
+                                                if (e.target.dataset.hadError) return;
+                                                e.target.dataset.hadError = true; // 에러 처리 플래그 설정
+                                                e.target.src = NO_IMAGE_PLACEHOLDER; // 플레이스홀더 이미지로 변경
+                                            }}
                                         />
 
                                         <div className="flex-1">
@@ -362,88 +394,193 @@ const MyPage = () => {
         </div>
     );
 
-// 2. 판매내역 탭 렌더링
-    const renderSales = () => (
-        <div id="content-sales" className="tab-content">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">판매내역</h2>
-            <div className="space-y-4">
-                {sales && sales.length > 0 ? (
-                    sales.map((transaction) => {
-                        const badge = getStatusBadge(transaction.status, true);
-                        return (
-                            // ✅ Link로 감싸서 거래 상세 페이지로 이동하도록 수정
-                            <Link to={`/transactions/${transaction.transactionId}`} key={transaction.transactionId} className="block">
-                                <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all">
-                                    <div className="flex gap-4 items-center">
-                                        {/* 상품 이미지: getProductImageUrl 헬퍼 함수 적용 */}
-                                        <img
-                                            src={getProductImageUrl(transaction.productImage)}
-                                            alt={transaction.productTitle}
-                                            className="w-32 h-32 object-cover rounded-lg"
-                                            onError={(e) => {e.target.onerror = null; e.target.src=NO_IMAGE_PLACEHOLDER;}}
-                                        />
+// MyPage.jsx (renderSales 함수 전체)
 
-                                        <div className="flex-1">
-                                            <h3 className="text-lg font-bold text-gray-800 mb-2">{transaction.productTitle}</h3>
-                                            <p className="text-2xl font-bold text-primary mb-2">
-                                                {formatPrice(transaction.productPrice)}원
-                                            </p>
-                                            <p className="text-gray-600 text-sm mb-1">
-                                                구매자: <span className="font-medium">{transaction.buyerName}</span>
-                                            </p>
-                                            <p className="text-gray-500 text-sm">
-                                                판매일: {formatDate(transaction.transactionDate)}
-                                            </p>
-                                        </div>
+    const renderSales = () => {
+        // ESLint 경고 해결을 위해 data에서 sales와 products를 직접 참조
+        const { sales, products } = data;
 
-                                        <div className="flex flex-col justify-between items-end h-full">
-                                            {/* 상태 배지 */}
-                                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${badge.class}`}>
+        // 1. 거래가 진행 중이거나 완료된 상품 (Transaction) 목록에서 Product ID를 추출
+        const transactionProductIds = new Set(
+            (sales || []).map(t => t.productId)
+        );
+
+        // 2. 등록된 모든 상품 (products) 목록에서 거래 목록에 없는 상품만 필터링 (판매 중인 상품)
+        const sellingProducts = (products || []).filter(
+            p => !transactionProductIds.has(p.productId)
+        );
+
+        // 3. 거래 목록(sales)과 판매 중인 상품 목록(sellingProducts)을 결합
+        const mappedSellingItems = sellingProducts.map(p => ({
+            // 거래 정보 필드는 null/임시 값으로 설정
+            transactionId: null,
+            status: 'SELLING', // '판매 중' 상태 (클라이언트에서 정의한 임시 상태)
+            buyerName: '판매 중', // 거래가 없으므로 '구매자 없음' 대신 '판매 중'으로 표시
+            depositorName: null,
+            transactionDate: null, // ✅ 거래일은 null
+            createdDate: p.createdDate, // ✅ 등록일 (정렬 기준으로 사용)
+
+            // 상품 정보 필드는 ProductDetailResponse에서 직접 매핑
+            productId: p.productId,
+            productTitle: p.title,
+            productPrice: p.price,
+            productImage: p.mainImage,
+            sellerName: apiUser.nickname,
+            product: p, // 원본 Product 정보
+        }));
+
+        // 최종 목록 합치기
+        const finalSalesList = [
+            ...(sales || []),
+            ...mappedSellingItems
+        ];
+
+        // ✅ 수정된 정렬 로직: transactionDate(거래일)이 있으면 사용, 없으면 createdDate(등록일) 사용
+        finalSalesList.sort((a, b) => {
+            // 거래가 있는 상품은 transactionDate(거래일)이 우선
+            const dateA = new Date(a.transactionDate || a.createdDate);
+            const dateB = new Date(b.transactionDate || b.createdDate);
+
+            // 유효하지 않은 날짜 처리 (NaN 방지)
+            if (isNaN(dateA.getTime())) return 1;
+            if (isNaN(dateB.getTime())) return -1;
+
+            return dateB.getTime() - dateA.getTime(); // 내림차순 정렬 (최신순)
+        });
+
+        // 렌더링 로직 (item.status가 'SELLING'인 경우를 포함하여 처리)
+        return (
+            <div id="content-sales" className="tab-content">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">판매내역</h2>
+                <div className="space-y-4">
+                    {finalSalesList && finalSalesList.length > 0 ? (
+                        finalSalesList.map((item) => {
+                            const isTransaction = !!item.transactionId;
+                            // 거래 상태가 없으면 'SELLING'으로 설정
+                            const currentStatus = isTransaction ? item.status : 'SELLING';
+                            const badge = getStatusBadge(currentStatus, true);
+
+                            // 렌더링에 사용할 필드들 (mappedSellingItems와 sales DTO 모두 대응)
+                            const displayTitle = item.productTitle;
+                            const displayPrice = item.productPrice;
+                            const displayImage = item.productImage;
+
+                            // 구매자 이름/상태 표시
+                            const buyerOrStatusText = isTransaction ? '구매자' : '상태';
+                            const displayBuyerName = item.buyerName; // '판매 중' 또는 실제 구매자 닉네임
+
+                            // 날짜 표시: 거래일이 있으면 '판매일', 없으면 '등록일'
+                            const dateLabel = isTransaction ? '판매일' : '등록일';
+                            const displayDate = formatDate(item.transactionDate || item.createdDate);
+
+                            // 거래 항목 클릭 시 이동 경로 결정
+                            let linkTo;
+                            if (isTransaction) {
+                                // 거래가 있다면 거래 상세 페이지로
+                                linkTo = `/transactions/${item.transactionId}`;
+                            } else {
+                                // 판매 중인 상품은 상품 상세 페이지로 이동 (수정 버튼이 따로 있음)
+                                linkTo = `/products/${item.productId}`;
+                            }
+
+
+                            return (
+                                <Link to={linkTo} key={isTransaction ? `t-${item.transactionId}` : `p-${item.productId}`} className="block">
+                                    <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all">
+                                        <div className="flex gap-4 items-center">
+                                            {/* 상품 이미지: getProductImageUrl 헬퍼 함수 적용 */}
+                                            <img
+                                                src={getProductImageUrl(displayImage) || null}
+                                                alt={displayTitle}
+                                                className="w-32 h-32 object-cover rounded-lg"
+                                                onError={(e) => {
+                                                    // 이미 에러 처리를 했으면 다시 하지 않도록 막음
+                                                    if (e.target.dataset.hadError) return;
+                                                    e.target.dataset.hadError = true;
+                                                    e.target.src = NO_IMAGE_PLACEHOLDER;
+                                                }}
+                                            />
+
+                                            <div className="flex-1">
+                                                <h3 className="text-lg font-bold text-gray-800 mb-2">{displayTitle}</h3>
+                                                <p className="text-2xl font-bold text-primary mb-2">
+                                                    {formatPrice(displayPrice)}원
+                                                </p>
+                                                <p className="text-gray-600 text-sm mb-1">
+                                                    {buyerOrStatusText}:
+                                                    <span className="font-medium">
+                                                {displayBuyerName}
+                                            </span>
+                                                </p>
+                                                <p className="text-gray-500 text-sm">
+                                                    {dateLabel}: {displayDate}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex flex-col justify-between items-end h-full">
+                                                {/* 상태 배지 */}
+                                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${badge.class}`}>
                                             {badge.text}
                                         </span>
 
-                                            {/* 상태에 따른 액션 버튼 */}
-                                            <div className="mt-3 space-y-2">
-                                                {transaction.status === 'COMPLETED' && ( // 판매 완료 상태
-                                                    <button
-                                                        className="text-gray-600 hover:text-primary text-sm w-full text-right"
-                                                        onClick={(e) => e.preventDefault()} // Link 동작 방지
-                                                    >
-                                                        <i className="bi bi-chat-dots mr-1"></i>문의하기
-                                                    </button>
-                                                )}
-                                                {transaction.status === 'PENDING' && ( // 입금 확인 대기 상태
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.preventDefault(); // Link 동작 방지
-                                                            confirmPayment(transaction.transactionId);
-                                                        }}
-                                                        className="bg-primary hover:bg-secondary text-white text-sm px-4 py-2 rounded-lg w-full font-medium transition-all"
-                                                    >
-                                                        <i className="bi bi-check-circle mr-1"></i>입금 확인하기
-                                                    </button>
-                                                )}
+                                                {/* 상태에 따른 액션 버튼 */}
+                                                <div className="mt-3 space-y-2">
+                                                    {/* 판매 중인 상품 (거래 ID가 없음)일 경우, 수정 버튼 표시 */}
+                                                    {!isTransaction && (
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.preventDefault(); // Link 동작 방지
+                                                                navigate(`/products/${item.productId}/edit`);
+                                                            }}
+                                                            variant="secondary" size="sm" className="w-full text-right"
+                                                        >
+                                                            <i className="bi bi-pencil-fill mr-1"></i>수정하기
+                                                        </Button>
+                                                    )}
+
+                                                    {/* 거래가 진행 중일 경우 (PENDING), 입금 확인 버튼 표시 */}
+                                                    {isTransaction && currentStatus === 'PENDING' && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault(); // Link 동작 방지
+                                                                confirmPayment(item.transactionId);
+                                                            }}
+                                                            className="bg-primary hover:bg-secondary text-white text-sm px-4 py-2 rounded-lg w-full font-medium transition-all"
+                                                        >
+                                                            <i className="bi bi-check-circle mr-1"></i>입금 확인하기
+                                                        </button>
+                                                    )}
+
+                                                    {/* 판매 완료 상태 (COMPLETED) */}
+                                                    {isTransaction && currentStatus === 'COMPLETED' && (
+                                                        <button
+                                                            className="text-gray-600 hover:text-primary text-sm w-full text-right"
+                                                            onClick={(e) => e.preventDefault()}
+                                                        >
+                                                            <i className="bi bi-chat-dots mr-1"></i>문의하기
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Link>
-                        );
-                    })
-                ) : (
-                    /* Empty State */
-                    <div className="text-center py-16">
-                        <i className="bi bi-receipt text-6xl text-gray-300 mb-4"></i>
-                        <p className="text-gray-500 text-lg">판매내역이 없습니다.</p>
-                        {/* 상품 등록 페이지로 이동 */}
-                        <Button onClick={() => navigate('/products/write')} variant="primary" size="md" className="mt-4">
-                            상품 등록하기
-                        </Button>
-                    </div>
-                )}
+                                </Link>
+                            );
+                        })
+                    ) : (
+                        /* Empty State */
+                        <div className="text-center py-16">
+                            <i className="bi bi-receipt text-6xl text-gray-300 mb-4"></i>
+                            <p className="text-gray-500 text-lg">등록된 상품이 없습니다.</p>
+                            <Button onClick={() => navigate('/products/write')} variant="primary" size="md" className="mt-4">
+                                상품 등록하기
+                            </Button>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     // 3. 찜한 목록 탭 렌더링
     const renderLikes = () => (
@@ -457,10 +594,14 @@ const MyPage = () => {
                                 <Link to={`/products/${like.productId}`}>
                                     {/* 상품 이미지: getProductImageUrl 헬퍼 함수 적용 */}
                                     <img
-                                        src={getProductImageUrl(like.productImage)}
+                                        src={getProductImageUrl(like.productImage) || null}
                                         alt={like.productTitle}
                                         className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                                        onError={(e) => {e.target.onerror = null; e.target.src=NO_IMAGE_PLACEHOLDER;}}
+                                        onError={(e) => {
+                                            if (e.target.dataset.hadError) return;
+                                            e.target.dataset.hadError = true;
+                                            e.target.src = NO_IMAGE_PLACEHOLDER;
+                                        }}
                                     />
                                 </Link>
                                 {/* 찜 해제 버튼 */}
@@ -584,8 +725,6 @@ const MyPage = () => {
 
             {/* Main Content (mypage.html 반영) */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-                {/* Success Message (컴포넌트 내에서는 사용하지 않음, 필요 시 Props로 받아야 함) */}
 
                 {/* User Info Card */}
                 <UserProfile user={apiUser} />
