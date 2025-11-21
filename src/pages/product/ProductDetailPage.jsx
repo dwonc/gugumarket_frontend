@@ -91,9 +91,25 @@ const ProductDetailPage = () => {
     );
   }
 
-  // 판매자 여부 확인
+  // 판매자 및 관리자 인지 확인
   const isSeller =
-    isAuthenticated && user?.username === product.seller?.userName;
+    isAuthenticated && user?.userName === product?.sellerUsername;
+
+  const isAdmin = isAuthenticated && user?.role === "ADMIN";
+
+  const canEdit = isSeller || isAdmin;
+
+  console.log("🔐 권한 확인 (상세):", {
+    isAuthenticated,
+    "user 전체": user, // ← 추가!
+    userName: user?.userName,
+    "user?.role": user?.role, // ← 확인!
+    "user?.role 타입": typeof user?.role,
+    sellerUsername: product?.sellerUsername,
+    isSeller,
+    isAdmin,
+    canEdit,
+  });
 
   // 이미지 변경
   const handleImageChange = (imageUrl) => {
@@ -299,7 +315,7 @@ const ProductDetailPage = () => {
               <div className="space-y-3 py-6 border-y border-gray-200">
                 <div className="flex justify-between">
                   <span className="text-gray-600">카테고리</span>
-                  <span className="font-medium">{product.category?.name}</span>
+                  <span className="font-medium">{product.categoryName}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">상태</span>
@@ -332,7 +348,7 @@ const ProductDetailPage = () => {
               {/* Action Buttons */}
               <div className="mt-6">
                 {/* 판매자인 경우 */}
-                {isSeller ? (
+                {canEdit ? (
                   <>
                     {/* 상태 변경 UI */}
                     <div className="mb-4 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">

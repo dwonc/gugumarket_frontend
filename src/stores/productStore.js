@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import api from "../api/axios";
 
-export const useProductStore = create((set) => ({
+export const useProductStore = create((set, get) => ({
   // 상품 상태
   product: null,
   products: [],
@@ -26,11 +26,25 @@ export const useProductStore = create((set) => ({
   fetchProduct: async (productId) => {
     set({ loading: true, error: null });
     try {
+      console.log("🔍 fetchProduct 호출, ID:", productId);
+
       const response = await api.get(`/api/products/${productId}`);
+      console.log("🔍 서버 응답:", response.data);
+
       const data = response.data;
-      set({ product: data.product || data, loading: false });
-      return data;
+
+      const product = data.product || data;
+      set({ product, loading: false });
+
+      return {
+        success: data.success,
+        product: product,
+        isLiked: data.isLiked,
+        likeCount: data.likeCount,
+        interestedBuyers: data.interestedBuyers,
+      };
     } catch (error) {
+      console.error("❌ fetchProduct 실패:", error);
       set({ error: error.message, loading: false });
       throw error;
     }
@@ -165,7 +179,13 @@ export const useProductStore = create((set) => ({
         throw new Error(result.message || "수정 실패");
       }
     } catch (error) {
-      set({ error: error.message, loading: false });
+      set({
+        error:
+          error.response?.data?.message ||
+          error.message ||
+          "상품 수정 중 오류가 발생했습니다.",
+        loading: false,
+      });
       throw error;
     }
   },
@@ -187,7 +207,7 @@ export const useProductStore = create((set) => ({
   // 상품 좋아요 토글
   toggleLike: async (productId) => {
     try {
-      const response = await api.post(`/product/${productId}/like`);
+      const response = await api.post(`/api/products/${productId}/like`);
       const result = response.data;
 
       if (result.needLogin) {
@@ -202,7 +222,10 @@ export const useProductStore = create((set) => ({
       }
 
       if (result.success) {
-        return result;
+        return {
+          isLiked: result.isLiked,
+          likeCount: result.likeCount,
+        };
       } else {
         throw new Error(result.message || "좋아요 처리 실패");
       }
@@ -214,13 +237,25 @@ export const useProductStore = create((set) => ({
 
   // 상품 상태 변경
   updateProductStatus: async (productId, status) => {
+    set({ loading: true, error: null });
     try {
-      const response = await api.put(`/product/${productId}/status`, {
+      const response = await api.put(`/api/products/${productId}/status`, {
         status,
       });
       const result = response.data;
 
+      set({ loading: false });
+
       if (result.success) {
+        const currentProduct = get().product;
+        if (currentProduct && currentProduct.productId === productId) {
+          set({
+            product: {
+              ...currentProduct,
+              status: status,
+            },
+          });
+        }
         return result;
       } else {
         throw new Error(result.message || "상태 변경 실패");
@@ -228,6 +263,7 @@ export const useProductStore = create((set) => ({
     } catch (error) {
       console.error("상태 변경 실패:", error);
       const errorMessage = error.response?.data?.message || error.message;
+      set({ error: errorMessage, loading: false });
       throw new Error(errorMessage);
     }
   },
