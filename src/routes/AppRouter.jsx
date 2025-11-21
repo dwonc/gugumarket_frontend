@@ -1,18 +1,19 @@
 import { createBrowserRouter } from "react-router-dom";
-// import PrivateRoute from "./PrivateRoute";
+import PrivateRoute from "./PrivateRoute";
 // import AdminRoute from "./AdminRoute";
 
 // Pages
 import MainPage from "../pages/product/MainPage";
 import LoginPage from "../pages/auth/LoginPage";
-// import SignupPage from "../pages/auth/SignupPage";
+import SignupPage from "../pages/auth/SignupPage";
+import MyPage from "../pages/user/MyPage";
+import Edit from "../pages/user/Edit";
 // import ProductDetailPage from "../pages/product/ProductDetailPage";
 // import ProductWritePage from "../pages/product/ProductWritePage";
 // import ProductEditPage from "../pages/product/ProductEditPage";
 // import PurchasePage from "../pages/transaction/PurchasePage";
 // import PurchaseCompletePage from "../pages/transaction/PurchaseCompletePage";
 // import TransactionDetailPage from "../pages/transaction/TransactionDetailPage";
-// import MyPage from "../pages/user/MyPage";
 // import NotificationPage from "../pages/notification/NotificationPage";
 // import QnaListPage from "../pages/qna/QnaListPage";
 // import QnaFormPage from "../pages/qna/QnaFormPage";
@@ -31,18 +32,18 @@ const router = createBrowserRouter([
     path: "/login",
     element: <LoginPage />,
   },
-  /** 
-   * {
+  {
     path: "/signup",
     element: <SignupPage />,
   },
+  /**
   {
     path: "/products/:id",
     element: <ProductDetailPage />,
   }, **/
 
   // Private Routes (로그인 필요)
-  /**
+
   {
     element: <PrivateRoute />,
     children: [
@@ -50,6 +51,11 @@ const router = createBrowserRouter([
         path: "/mypage",
         element: <MyPage />,
       },
+      {
+        path:"/mypage/edit",
+        element:<Edit />,
+      },
+      /**
       {
         path: "/products/write",
         element: <ProductWritePage />,
@@ -83,8 +89,9 @@ const router = createBrowserRouter([
         element: <QnaFormPage />,
       },
     ],
-  },
-**/
+       **/
+   ]
+  }
   /**
   // Admin Routes (관리자 전용)
   {
