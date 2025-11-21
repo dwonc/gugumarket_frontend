@@ -9,6 +9,21 @@ import ErrorMessage from "../../components/common/ErrorMessage";
 import Button from "../../components/common/Button";
 import UserProfile from "../../components/user/UserProfile";
 
+// ✅ 백엔드 기본 URL 설정 (axios.js와 동일하게 환경 변수 사용)
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+// primary: #6B4F4F 색상을 배경색으로 사용한 SVG Data URI
+const NO_IMAGE_PLACEHOLDER =
+  "data:image/svg+xml;base64," +
+  btoa(
+    '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">' +
+      '<rect width="100%" height="100%" fill="#6B4F4F"/>' + // primary 색상
+      '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" ' +
+      'font-family="sans-serif" font-size="16" fill="#FFFFFF">No Image</text>' +
+      "</svg>"
+  );
+
 const MyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,6 +43,7 @@ const MyPage = () => {
     setLoading(true);
     setError(null);
     try {
+      // MypageController.java의 @GetMapping("/") 엔드포인트 호출
       const response = await api.get("/mypage");
       if (response.data.success) {
         setData(response.data);
@@ -39,6 +55,7 @@ const MyPage = () => {
     } catch (err) {
       console.error("마이페이지 데이터 로드 오류:", err);
       if (err.response?.status === 401) {
+        // 토큰 만료 등 인증 오류 시 로그아웃 처리
         logout();
         navigate("/login");
         setError("세션이 만료되었습니다. 다시 로그인해주세요.");
@@ -54,10 +71,12 @@ const MyPage = () => {
     if (isAuthenticated) {
       fetchData();
     } else if (user === null && !isAuthenticated && !loading) {
+      // 만약 로그아웃 상태인데 마이페이지에 접근한 경우 리디렉션 처리
       navigate("/login");
     }
   }, [isAuthenticated, fetchData, navigate, location.state]);
 
+  // ✅ 추가: user가 변경될 때마다 데이터 새로고침
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchData();
@@ -114,13 +133,16 @@ const MyPage = () => {
     return statusMap[key] || statusMap[statusName] || defaultStatus;
   };
 
+  // 찜 해제 (mypage.html의 JS 로직 반영)
   const handleUnlike = async (productId) => {
     if (!window.confirm("찜 목록에서 제거하시겠습니까?")) return;
 
     try {
+      // LikeController의 @PostMapping("/like/toggle/{productId}") 가정
       const res = await api.post(`/like/toggle/${productId}`);
 
       if (res.status === 200) {
+        // UI에서 즉시 제거
         const updatedLikes = data.likes.filter(
           (like) => like.productId !== productId
         );
@@ -133,15 +155,18 @@ const MyPage = () => {
     }
   };
 
+  // 입금 확인 처리 함수 (mypage.html의 JS 로직 반영)
   const confirmPayment = async (transactionId) => {
     if (!window.confirm("입금을 확인하셨습니까? 거래를 완료 처리합니다."))
       return;
 
     try {
+      // TransactionController의 @PostMapping("/transaction/{id}/complete") 가정
       const response = await api.post(`/transaction/${transactionId}/complete`);
 
       if (response.status === 200) {
         alert("거래가 완료되었습니다.");
+        // 데이터 새로고침
         fetchData();
       } else {
         alert("처리 중 오류가 발생했습니다.");
@@ -152,10 +177,14 @@ const MyPage = () => {
     }
   };
 
+  // 알림 읽음 처리 (mypage.html의 JS 로직 반영)
   const markAsRead = async (notificationId) => {
     try {
+      // NotificationController의 @PostMapping("/mypage/notifications/{id}/read") 가정
       await api.post(`/mypage/notifications/${notificationId}/read`);
+      // UI에서 즉시 읽음 처리 (선택적) 또는 새로고침
 
+      // UI 업데이트
       setData((prevData) => {
         const updatedNotifications = prevData.recentNotifications.map((notif) =>
           notif.notificationId === notificationId
@@ -209,7 +238,9 @@ const MyPage = () => {
     unreadCount,
   } = data;
 
-  // 구매내역 탭
+  // --- 탭 콘텐츠 렌더링 함수 ---
+
+  // 1. 구매내역 탭 렌더링
   const renderPurchases = () => (
     <div id="content-purchases" className="tab-content">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">구매내역</h2>
@@ -223,25 +254,20 @@ const MyPage = () => {
                 className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all"
               >
                 <div className="flex gap-4 items-center">
-                  {/* ✅ 이미지 수정 */}
-                  <div className="w-32 h-32 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
-                    {transaction.productImage ? (
-                      <img
-                        src={transaction.productImage}
-                        alt={transaction.productTitle}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src =
-                            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%236B4F4F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='12' fill='white'%3ENo Image%3C/text%3E%3C/svg%3E";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-primary">
-                        <i className="bi bi-image text-white text-3xl"></i>
-                      </div>
-                    )}
-                  </div>
+                  {/* 상품 이미지 */}
+                  <img
+                    src={
+                      transaction.productImage ||
+                      "https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image"
+                    }
+                    alt={transaction.productTitle}
+                    className="w-32 h-32 object-cover rounded-lg"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src =
+                        "https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image";
+                    }}
+                  />
 
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-800 mb-2">
@@ -262,19 +288,21 @@ const MyPage = () => {
                   </div>
 
                   <div className="flex flex-col justify-between items-end h-full">
+                    {/* 상태 배지 */}
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-medium ${badge.class}`}
                     >
                       {badge.text}
                     </span>
 
+                    {/* 상태에 따른 액션 버튼 */}
                     <div className="mt-3 space-y-2">
-                      {transaction.status === "COMPLETED" && (
+                      {transaction.status === "COMPLETED" && ( // 구매 확정 상태
                         <button className="text-gray-600 hover:text-primary text-sm w-full text-right">
                           <i className="bi bi-chat-dots mr-1"></i>문의하기
                         </button>
                       )}
-                      {transaction.status === "PENDING" && (
+                      {transaction.status === "PENDING" && ( // 입금 대기 상태
                         <button className="text-blue-600 hover:text-blue-800 text-sm w-full text-right font-medium">
                           <i className="bi bi-credit-card mr-1"></i>입금 정보
                           보기
@@ -287,6 +315,7 @@ const MyPage = () => {
             );
           })
         ) : (
+          /* Empty State */
           <div className="text-center py-16">
             <i className="bi bi-bag-x text-6xl text-gray-300 mb-4"></i>
             <p className="text-gray-500 text-lg">구매내역이 없습니다.</p>
@@ -296,7 +325,7 @@ const MyPage = () => {
     </div>
   );
 
-  // 판매내역 탭
+  // 2. 판매내역 탭 렌더링
   const renderSales = () => (
     <div id="content-sales" className="tab-content">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">판매내역</h2>
@@ -310,25 +339,20 @@ const MyPage = () => {
                 className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all"
               >
                 <div className="flex gap-4 items-center">
-                  {/* ✅ 이미지 수정 */}
-                  <div className="w-32 h-32 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
-                    {transaction.productImage ? (
-                      <img
-                        src={transaction.productImage}
-                        alt={transaction.productTitle}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src =
-                            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='150' height='150' fill='%236B4F4F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='12' fill='white'%3ENo Image%3C/text%3E%3C/svg%3E";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-primary">
-                        <i className="bi bi-image text-white text-3xl"></i>
-                      </div>
-                    )}
-                  </div>
+                  {/* 상품 이미지 */}
+                  <img
+                    src={
+                      transaction.productImage ||
+                      "https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image"
+                    }
+                    alt={transaction.productTitle}
+                    className="w-32 h-32 object-cover rounded-lg"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src =
+                        "https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image";
+                    }}
+                  />
 
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-800 mb-2">
@@ -349,19 +373,21 @@ const MyPage = () => {
                   </div>
 
                   <div className="flex flex-col justify-between items-end h-full">
+                    {/* 상태 배지 */}
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-medium ${badge.class}`}
                     >
                       {badge.text}
                     </span>
 
+                    {/* 상태에 따른 액션 버튼 */}
                     <div className="mt-3 space-y-2">
-                      {transaction.status === "COMPLETED" && (
+                      {transaction.status === "COMPLETED" && ( // 판매 완료 상태
                         <button className="text-gray-600 hover:text-primary text-sm w-full text-right">
                           <i className="bi bi-chat-dots mr-1"></i>문의하기
                         </button>
                       )}
-                      {transaction.status === "PENDING" && (
+                      {transaction.status === "PENDING" && ( // 입금 확인 대기 상태
                         <button
                           onClick={() =>
                             confirmPayment(transaction.transactionId)
@@ -379,6 +405,7 @@ const MyPage = () => {
             );
           })
         ) : (
+          /* Empty State */
           <div className="text-center py-16">
             <i className="bi bi-receipt text-6xl text-gray-300 mb-4"></i>
             <p className="text-gray-500 text-lg">판매내역이 없습니다.</p>
@@ -396,7 +423,7 @@ const MyPage = () => {
     </div>
   );
 
-  // 찜한 목록 탭
+  // 3. 찜한 목록 탭 렌더링
   const renderLikes = () => (
     <div id="content-likes" className="tab-content">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">찜한 목록</h2>
@@ -409,31 +436,25 @@ const MyPage = () => {
             >
               <div className="relative">
                 <Link to={`/product/${like.productId}`}>
-                  {/* ✅ 이미지 수정 */}
-                  <div className="relative w-full h-48 bg-gray-100 overflow-hidden">
-                    {like.productImage ? (
-                      <img
-                        src={like.productImage}
-                        alt={like.productTitle}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src =
-                            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%236B4F4F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='white'%3ENo Image%3C/text%3E%3C/svg%3E";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-primary">
-                        <i className="bi bi-image text-white text-4xl"></i>
-                      </div>
-                    )}
-                  </div>
+                  <img
+                    src={
+                      like.productImage ||
+                      "https://via.placeholder.com/300x200/6B4F4F/FFFFFF?text=No+Image"
+                    }
+                    alt={like.productTitle}
+                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src =
+                        "https://via.placeholder.com/300x200/6B4F4F/FFFFFF?text=No+Image";
+                    }}
+                  />
                 </Link>
                 {/* 찜 해제 버튼 */}
                 <button
                   type="button"
                   onClick={() => handleUnlike(like.productId)}
-                  className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white z-10"
+                  className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white toggle-like-btn"
                 >
                   <i className="bi bi-heart-fill text-red-500 text-xl"></i>
                 </button>
@@ -447,12 +468,14 @@ const MyPage = () => {
                 </p>
                 <p className="text-sm text-gray-500">
                   <i className="bi bi-geo-alt"></i>
+                  {/* DTO에 주소 필드가 없으므로 임시로 빈 값 */}
                   <span className="ml-1">위치 정보 없음</span>
                 </p>
               </div>
             </div>
           ))
         ) : (
+          /* Empty State */
           <div className="col-span-4 text-center py-16">
             <i className="bi bi-heart text-6xl text-gray-300 mb-4"></i>
             <p className="text-gray-500 text-lg">찜한 상품이 없습니다.</p>
@@ -522,6 +545,7 @@ const MyPage = () => {
                   className="block"
                 >
                   <div className="flex items-start gap-3">
+                    {/* Icon */}
                     <div className="flex-shrink-0">
                       <div
                         className={`w-12 h-12 rounded-full flex items-center justify-center ${
