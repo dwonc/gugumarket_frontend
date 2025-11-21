@@ -5,15 +5,19 @@ import AdminRoute from "./AdminRoute";
 // Pages
 import MainPage from "../pages/product/MainPage";
 import LoginPage from "../pages/auth/LoginPage";
-// import SignupPage from "../pages/auth/SignupPage";
+import SignupPage from "../pages/auth/SignupPage";
+import MyPage from "../pages/user/MyPage";
+import Edit from "../pages/user/Edit";
 // import ProductDetailPage from "../pages/product/ProductDetailPage";
 // import ProductWritePage from "../pages/product/ProductWritePage";
 // import ProductEditPage from "../pages/product/ProductEditPage";
 // import PurchasePage from "../pages/transaction/PurchasePage";
 // import PurchaseCompletePage from "../pages/transaction/PurchaseCompletePage";
 // import TransactionDetailPage from "../pages/transaction/TransactionDetailPage";
+
 // import MyPage from "../pages/user/MyPage";
 import NotificationPage from "../pages/notification/NotificationPage";
+
 // import QnaListPage from "../pages/qna/QnaListPage";
 // import QnaFormPage from "../pages/qna/QnaFormPage";
 import AdminPage from "../pages/admin/AdminPage";
@@ -31,10 +35,11 @@ const router = createBrowserRouter([
     path: "/login",
     element: <LoginPage />,
   },
-  /** {
+  {
     path: "/signup",
     element: <SignupPage />,
   },
+  /**
   {
     path: "/products/:id",
     element: <ProductDetailPage />,
@@ -45,10 +50,14 @@ const router = createBrowserRouter([
   {
     element: <PrivateRoute />,
     children: [
-      // {
-      //   path: "/mypage",
-      //   element: <MyPage />,
-      // },
+      {
+        path: "/mypage",
+        element: <MyPage />,
+      },
+      {
+        path: "/mypage/edit",
+        element: <Edit />,
+      },
       // {
       //   path: "/products/write",
       //   element: <ProductWritePage />,
@@ -85,6 +94,7 @@ const router = createBrowserRouter([
   },
 
   //Admin Routes (관리자 전용)
+
   {
     element: <AdminRoute />,
     children: [
@@ -104,7 +114,7 @@ const router = createBrowserRouter([
     path: "*",
     element: <ErrorPage />,
   },
-**/
+  **/
 ]);
 
 export default router;
