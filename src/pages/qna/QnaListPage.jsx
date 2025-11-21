@@ -166,21 +166,17 @@
 //             <Navbar />
 //             <div className="min-h-screen bg-gray-50">
 //                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-//                     {/* 헤더 카드 */}
-//                     <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-//                         <div className="flex justify-between items-start">
-//                             <div>
-//                                 <h2 className="text-4xl font-bold text-gray-800 mb-3">Q&A 게시판</h2>
-//                                 <p className="text-gray-600">궁금한 점이 있으시면 언제든지 문의해주세요!</p>
-//                             </div>
-//                             <button
-//                                 onClick={() => navigate('/qna/write')}
-//                                 className="bg-primary hover:bg-secondary text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center"
-//                             >
-//                                 <i className="bi bi-pencil-square mr-2"></i>
-//                                 질문 작성
-//                             </button>
+//                     {/* 헤더 */}
+//                     <div className="flex justify-between items-center mb-8">
+//                         <div>
+//                             <h1 className="text-4xl font-bold text-gray-800">Q&A</h1>
+//                             <p className="text-gray-600 mt-2">
+//                                 총 <span className="text-primary font-semibold">{totalElements}</span>개의 문의
+//                             </p>
 //                         </div>
+//                         <Button onClick={() => navigate('/qna/write')} variant="primary">
+//                             문의하기
+//                         </Button>
 //                     </div>
 //
 //                     {/* 검색 */}
