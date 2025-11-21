@@ -52,11 +52,14 @@ const ProductEditPage = () => {
     const loadData = async () => {
       try {
         await fetchCategories();
-        const productData = await fetchProduct(id);
+
+        const data = await fetchProduct(id);
+
+        const productData = data.product;
 
         // 폼 데이터 설정
         setFormData({
-          categoryId: productData.category?.categoryId || "",
+          categoryId: String(productData.categoryId || ""),
           title: productData.title || "",
           price: productData.price || "",
           content: productData.content || "",
@@ -76,14 +79,20 @@ const ProductEditPage = () => {
 
         setDataLoaded(true);
       } catch (err) {
+        console.error("데이터 로딩 실패:", err);
         setErrorMsg("상품 정보를 불러오는데 실패했습니다.");
+        setDataLoaded(true); // 에러여도 로딩 완료 처리
       }
     };
 
     if (id) {
       loadData();
     }
-  }, [id]);
+  }, [id, fetchCategories, fetchProduct]);
+
+  useEffect(() => {
+    console.log("현재 formData:", formData);
+  }, [formData]);
 
   // 입력값 변경 핸들러
   const handleInputChange = (e) => {
@@ -211,7 +220,7 @@ const ProductEditPage = () => {
     try {
       const updatedProduct = await updateProduct(id, formData);
       alert("✅ 상품이 수정되었습니다!");
-      navigate(`/product/${updatedProduct.productId}`);
+      navigate(`/products/${id}`);
     } catch (error) {
       setErrorMsg(error.message);
     }
@@ -289,7 +298,7 @@ const ProductEditPage = () => {
                 <option value="">카테고리를 선택하세요</option>
                 {categories.map((category) => (
                   <option key={category.categoryId} value={category.categoryId}>
-                    {category.name}
+                    {category.categoryName || category.name}
                   </option>
                 ))}
               </select>
