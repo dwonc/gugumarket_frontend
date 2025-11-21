@@ -4,7 +4,7 @@ import useAuth from "../../hooks/useAuth";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { handleLogin } = useAuth();
+  const { handleLogin, handleKakaoLogin } = useAuth(); // 🔥 handleKakaoLogin 추가
 
   const [formData, setFormData] = useState({
     userName: "",
@@ -170,6 +170,24 @@ const LoginPage = () => {
                 <span className="px-2 bg-white text-gray-500">또는</span>
               </div>
             </div>
+
+            {/* 🔥 카카오 로그인 버튼 */}
+            <button
+              type="button"
+              onClick={handleKakaoLogin}
+              disabled={loading}
+              className="w-full bg-[#FEE500] hover:bg-[#FDD835] text-[#000000] font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg disabled:opacity-50 disabled:transform-none flex items-center justify-center space-x-2"
+            >
+              <img
+                src="/images/kakao-logo.png"
+                alt="Kakao"
+                className="w-5 h-5"
+                onError={(e) => {
+                  e.target.style.display = "none";
+                }}
+              />
+              <span>카카오로 시작하기</span>
+            </button>
 
             {/* Links */}
             <div className="grid grid-cols-2 gap-4 text-center text-sm">

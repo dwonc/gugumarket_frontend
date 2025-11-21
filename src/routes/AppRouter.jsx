@@ -15,7 +15,7 @@ import ProductEditPage from "../pages/product/ProductEditPage";
 // import PurchasePage from "../pages/transaction/PurchasePage";
 // import PurchaseCompletePage from "../pages/transaction/PurchaseCompletePage";
 // import TransactionDetailPage from "../pages/transaction/TransactionDetailPage";
-
+import KakaoCallbackPage from "../pages/auth/KakaoCallbackPage";
 // import MyPage from "../pages/user/MyPage";
 import NotificationPage from "../pages/notification/NotificationPage";
 
@@ -40,7 +40,10 @@ const router = createBrowserRouter([
     path: "/signup",
     element: <SignupPage />,
   },
-
+  {
+    path: "/auth/kakao", // 🔥 카카오 콜백 라우트 추가
+    element: <KakaoCallbackPage />,
+  },
   {
     path: "/products/:id",
     element: <ProductDetailPage />,
