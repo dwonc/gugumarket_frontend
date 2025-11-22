@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/authStore";
 import { authApi } from "../api/authApi";
-import { kakaoApi } from "../api/kakaoApi"; // 🔥 추가
+import { kakaoApi } from "../api/kakaoApi";
 
 const useAuth = () => {
   const navigate = useNavigate();
-  const { login, logout, user, isAuthenticated } = useAuthStore();
+  const { login, logout, updateUser, user, isAuthenticated } = useAuthStore(); // ✅ updateUser 추가!
 
   // 기존 일반 로그인
   const handleLogin = async (credentials) => {
@@ -39,50 +39,61 @@ const useAuth = () => {
     }
   };
 
-  // 🔥 카카오 로그인
+  // 카카오 로그인
   const handleKakaoLogin = () => {
     kakaoApi.redirectToKakaoLogin();
   };
 
-  // handleKakaoCallback 함수만 수정
+  /**
+   * 카카오 로그인 콜백 처리
+   */
   const handleKakaoCallback = async (code) => {
     try {
-      console.log("🔐 useAuth: 카카오 콜백 처리 시작");
-      const response = await kakaoApi.kakaoCallback(code);
-      const { data } = response.data;
+      console.log("🔐 카카오 콜백 처리 시작 - code:", code);
 
-      console.log("✅ useAuth: 토큰 받음:", {
-        hasAccessToken: !!data.accessToken,
-        username: data.username,
-      });
+      const response = await authApi.kakaoCallback(code);
 
-      login({
-        user: {
-          userName: data.username,
-          nickname: data.username,
-          email: data.email,
-          role: data.role,
-        },
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      });
+      console.log("📥 카카오 콜백 응답:", response);
 
-      console.log("✅ useAuth: 로그인 상태 저장 완료");
+      if (response.data.success) {
+        const loginData = response.data.data;
 
-      // 🔥 navigate를 동기적으로 실행
-      if (data.role === "ADMIN") {
-        navigate("/admin", { replace: true });
+        console.log("✅ 카카오 로그인 성공:", loginData);
+
+        // Zustand store에 저장
+        login({
+          user: loginData.user,
+          accessToken: loginData.accessToken,
+          refreshToken: loginData.refreshToken,
+        });
+
+        // requiresAddressUpdate 플래그 반환
+        const result = {
+          success: true,
+          message: "카카오 로그인 성공",
+          requiresAddressUpdate: loginData.requiresAddressUpdate || false,
+          user: loginData.user,
+        };
+
+        // 주소가 이미 있으면 바로 메인으로 이동
+        if (!loginData.requiresAddressUpdate) {
+          navigate("/");
+        }
+
+        return result;
       } else {
-        navigate("/", { replace: true });
+        return {
+          success: false,
+          message: response.data.message || "카카오 로그인에 실패했습니다.",
+        };
       }
-
-      return { success: true };
     } catch (error) {
-      console.error("❌ useAuth: 카카오 콜백 실패:", error);
+      console.error("❌ 카카오 로그인 에러:", error);
       return {
         success: false,
         message:
-          error.response?.data?.message || "카카오 로그인에 실패했습니다.",
+          error.response?.data?.message ||
+          "카카오 로그인 처리 중 오류가 발생했습니다.",
       };
     }
   };
@@ -92,12 +103,45 @@ const useAuth = () => {
     navigate("/login");
   };
 
+  /**
+   * 소셜 로그인 사용자 필수정보 입력
+   */
+  const handleCompleteProfile = async (profileData) => {
+    try {
+      console.log("📝 필수정보 입력 시작:", profileData);
+
+      const response = await authApi.completeProfile(profileData);
+
+      if (response.data.success) {
+        // Zustand store 업데이트
+        const updatedUser = response.data.user;
+        updateUser(updatedUser);
+
+        console.log("✅ 필수정보 입력 성공:", updatedUser);
+
+        // 메인 페이지로 이동
+        navigate("/");
+
+        return {
+          success: true,
+          message: response.data.message,
+        };
+      } else {
+        throw new Error(response.data.message);
+      }
+    } catch (error) {
+      console.error("❌ 필수정보 입력 실패:", error);
+      throw error;
+    }
+  };
+
   return {
     user,
     isAuthenticated,
     handleLogin,
-    handleKakaoLogin, // 🔥 추가
-    handleKakaoCallback, // 🔥 추가
+    handleKakaoLogin,
+    handleKakaoCallback,
+    handleCompleteProfile,
     handleLogout,
   };
 };

@@ -3,10 +3,21 @@ import { Link } from "react-router-dom";
 import { toggleProductLike } from "../../api/mainApi";
 import useAuthStore from "../../stores/authStore";
 
+// ✅ SVG Data URI 플레이스홀더
+const NO_IMAGE_PLACEHOLDER =
+  "data:image/svg+xml;base64," +
+  btoa(
+    '<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">' +
+      '<rect width="400" height="300" fill="#6B4F4F"/>' +
+      '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" ' +
+      'font-family="sans-serif" font-size="20" fill="#FFFFFF">No Image</text>' +
+      "</svg>"
+  );
+
 const ProductCard = ({ product, onLikeUpdate }) => {
   const [isLiked, setIsLiked] = useState(product.isLiked || false);
   const [isLiking, setIsLiking] = useState(false);
-  const { isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   const handleLikeToggle = async (e) => {
     e.preventDefault();
@@ -57,14 +68,13 @@ const ProductCard = ({ product, onLikeUpdate }) => {
             src={
               product.thumbnailImageUrl ||
               product.mainImage ||
-              "https://placehold.co/400x300/6B4F4F/FFFFFF?text=No+Image"
+              NO_IMAGE_PLACEHOLDER // ✅ SVG 사용
             }
             alt={product.productName || product.title}
             className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
             onError={(e) => {
               e.target.onerror = null;
-              e.target.src =
-                "https://placehold.co/400x300/6B4F4F/FFFFFF?text=No+Image";
+              e.target.src = NO_IMAGE_PLACEHOLDER; // ✅ SVG 사용
             }}
           />
         </Link>

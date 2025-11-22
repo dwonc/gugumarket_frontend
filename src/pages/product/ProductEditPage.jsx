@@ -635,7 +635,7 @@ const ProductEditPage = () => {
             <div className="flex gap-4 pt-4">
               <Button
                 type="button"
-                onClick={() => navigate(`/product/${id}`)}
+                onClick={() => navigate(`/products/${id}`)}
                 variant="secondary"
                 className="flex-1"
               >

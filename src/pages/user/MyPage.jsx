@@ -8,6 +8,7 @@ import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Button from "../../components/common/Button";
 import UserProfile from "../../components/user/UserProfile";
+import { toggleProductLike } from "../../api/mainApi";
 
 // ✅ 백엔드 기본 URL 설정 (axios.js와 동일하게 환경 변수 사용)
 const API_BASE_URL =
@@ -134,26 +135,36 @@ const MyPage = () => {
   };
 
   // 찜 해제 (mypage.html의 JS 로직 반영)
-  const handleUnlike = async (productId) => {
-    if (!window.confirm("찜 목록에서 제거하시겠습니까?")) return;
+  const handleUnlike = useCallback(
+    async (productId) => {
+      if (!window.confirm("찜 목록에서 제거하시겠습니까?")) return;
 
-    try {
-      // LikeController의 @PostMapping("/like/toggle/{productId}") 가정
-      const res = await api.post(`/like/toggle/${productId}`);
+      try {
+        // ✅ mainApi.js의 함수 사용 (올바른 경로: /api/products/{id}/like)
+        const response = await toggleProductLike(productId);
 
-      if (res.status === 200) {
-        // UI에서 즉시 제거
-        const updatedLikes = data.likes.filter(
-          (like) => like.productId !== productId
-        );
-        setData({ ...data, likes: updatedLikes });
-        alert("찜 목록에서 상품을 제거했습니다.");
+        if (response.success) {
+          const updatedLikes = data.likes.filter(
+            (like) => like.productId !== productId
+          );
+          setData({ ...data, likes: updatedLikes });
+          alert(response.message || "찜 목록에서 상품을 제거했습니다.");
+        } else {
+          alert(response.message || "오류가 발생했습니다.");
+        }
+      } catch (err) {
+        console.error("찜 해제 오류:", err);
+        if (err.response?.status === 401) {
+          alert("세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.");
+          logout();
+          navigate("/login");
+        } else {
+          alert("찜 해제 중 오류가 발생했습니다.");
+        }
       }
-    } catch (err) {
-      console.error("찜 해제 오류:", err);
-      alert("찜 해제 중 오류가 발생했습니다. 로그인을 확인해주세요.");
-    }
-  };
+    },
+    [data, logout, navigate]
+  );
 
   // 입금 확인 처리 함수 (mypage.html의 JS 로직 반영)
   const confirmPayment = async (transactionId) => {
@@ -256,16 +267,12 @@ const MyPage = () => {
                 <div className="flex gap-4 items-center">
                   {/* 상품 이미지 */}
                   <img
-                    src={
-                      transaction.productImage ||
-                      "https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image"
-                    }
+                    src={transaction.productImage || NO_IMAGE_PLACEHOLDER}
                     alt={transaction.productTitle}
                     className="w-32 h-32 object-cover rounded-lg"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src =
-                        "https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image";
+                      e.target.src = NO_IMAGE_PLACEHOLDER;
                     }}
                   />
 
@@ -341,16 +348,12 @@ const MyPage = () => {
                 <div className="flex gap-4 items-center">
                   {/* 상품 이미지 */}
                   <img
-                    src={
-                      transaction.productImage ||
-                      "https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image"
-                    }
+                    src={transaction.productImage || NO_IMAGE_PLACEHOLDER}
                     alt={transaction.productTitle}
                     className="w-32 h-32 object-cover rounded-lg"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src =
-                        "https://via.placeholder.com/150/6B4F4F/FFFFFF?text=No+Image";
+                      e.target.src = NO_IMAGE_PLACEHOLDER;
                     }}
                   />
 
@@ -410,7 +413,7 @@ const MyPage = () => {
             <i className="bi bi-receipt text-6xl text-gray-300 mb-4"></i>
             <p className="text-gray-500 text-lg">판매내역이 없습니다.</p>
             <Button
-              onClick={() => navigate("/product/write")}
+              onClick={() => navigate("/products/write")}
               variant="primary"
               size="md"
               className="mt-4"
@@ -435,18 +438,14 @@ const MyPage = () => {
               className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all group"
             >
               <div className="relative">
-                <Link to={`/product/${like.productId}`}>
+                <Link to={`/products/${like.productId}`}>
                   <img
-                    src={
-                      like.productImage ||
-                      "https://via.placeholder.com/300x200/6B4F4F/FFFFFF?text=No+Image"
-                    }
+                    src={like.productImage || NO_IMAGE_PLACEHOLDER}
                     alt={like.productTitle}
                     className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src =
-                        "https://via.placeholder.com/300x200/6B4F4F/FFFFFF?text=No+Image";
+                      e.target.src = NO_IMAGE_PLACEHOLDER;
                     }}
                   />
                 </Link>
