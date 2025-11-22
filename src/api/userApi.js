@@ -1,6 +1,24 @@
 import api from "./axios";
 
 export const userApi = {
+  // ✅ 아이디 중복 체크
+  checkUsername: async (username) => {
+    console.log("🚀 userApi.checkUsername 호출:", username);
+    const response = await api.get("/api/users/check-username", {
+      params: { username },
+    });
+    console.log("📥 userApi.checkUsername 응답:", response);
+    return response;
+  },
+
+  // ✅ 회원가입
+  signup: async (userData) => {
+    console.log("🚀 userApi.signup 호출:", userData);
+    const response = await api.post("/api/users/signup", userData);
+    console.log("📥 userApi.signup 응답:", response);
+    return response;
+  },
+
   // 아이디 찾기
   findUsername: async (email) => {
     console.log("🚀 userApi.findUsername 호출:", email);
@@ -31,19 +49,18 @@ export const userApi = {
     return response;
   },
 
-  // ✅ 회원정보 수정 폼 데이터 조회
+  // 회원정보 수정 폼 데이터 조회
   getEditFormData: async () => {
     console.log("🚀 userApi.getEditFormData 호출");
-    const response = await api.get("/mypage/edit"); // ✅ /mypage/edit
+    const response = await api.get("/mypage/edit");
     console.log("📥 userApi.getEditFormData 응답:", response);
     return response;
   },
 
-  // ✅ 회원정보 수정
+  // 회원정보 수정
   updateProfile: async (formData) => {
     console.log("🚀 userApi.updateProfile 호출");
     const response = await api.post("/mypage/edit", formData, {
-      // ✅ POST /mypage/edit
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -52,11 +69,10 @@ export const userApi = {
     return response;
   },
 
-  // ✅ 회원탈퇴 (백엔드에 API가 없으므로 임시)
+  // 회원탈퇴
   deleteUser: async () => {
     console.log("🚀 userApi.deleteUser 호출");
-    // TODO: 백엔드에 회원탈퇴 API 추가 필요!
-    const response = await api.delete("/mypage"); // 또는 적절한 경로
+    const response = await api.delete("/mypage");
     console.log("📥 userApi.deleteUser 응답:", response);
     return response;
   },
