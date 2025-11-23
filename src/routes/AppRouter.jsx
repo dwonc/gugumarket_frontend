@@ -25,7 +25,7 @@ import QnaListPage from "../pages/qna/QnaListPage";
 import QnaFormPage from "../pages/qna/QnaFormPage";
 import AdminPage from "../pages/admin/AdminPage";
 import UserDetailPage from "../pages/admin/UserDetailPage";
-// import ErrorPage from "../pages/ErrorPage";
+import ErrorPage from "../pages/ErrorPage";
 
 const router = createBrowserRouter([
   // Public Routes
@@ -89,10 +89,10 @@ const router = createBrowserRouter([
       //   path: "/purchase/complete/:transactionId",
       //   element: <PurchaseCompletePage />,
       // },
-     // {
-     //   path: "/transactions/:id",
-     //   element: <TransactionDetailPage />,
-     // },
+      // {
+      //   path: "/transactions/:id",
+      //   element: <TransactionDetailPage />,
+      // },
       {
         path: "/notifications",
         element: <NotificationPage />,
@@ -123,13 +123,12 @@ const router = createBrowserRouter([
       },
     ],
   },
-  /**
+
   // 404 Error
   {
     path: "*",
     element: <ErrorPage />,
   },
-  **/
 ]);
 
 export default router;
