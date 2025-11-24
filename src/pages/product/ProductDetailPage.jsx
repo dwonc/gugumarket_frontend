@@ -7,6 +7,7 @@ import Footer from "../../components/common/Footer";
 import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Button from "../../components/common/Button";
+import CommentSection from "../../components/comment/CommentSection";
 
 // ✅ 백엔드 기본 URL 설정 (MyPage.jsx와 동일)
 const API_BASE_URL =
@@ -572,8 +573,8 @@ const ProductDetailPage = () => {
             {product.content}
           </div>
         </div>
+        <CommentSection productId={product.productId} />
       </div>
-
       <Footer />
     </div>
   );

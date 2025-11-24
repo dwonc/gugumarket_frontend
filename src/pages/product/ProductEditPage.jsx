@@ -117,6 +117,8 @@ const ProductEditPage = () => {
 
     try {
       const imageUrl = await uploadImage(file);
+
+      //메인 이미지 교체
       setFormData((prev) => ({ ...prev, mainImage: imageUrl }));
       setMainImagePreview(imageUrl);
     } catch (error) {
@@ -138,8 +140,14 @@ const ProductEditPage = () => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    if (files.length > 5) {
-      alert("최대 5개의 이미지만 업로드 가능합니다.");
+    const currentCount = additionalImagePreviews.length;
+    const newCount = files.length;
+    const totalCount = currentCount + newCount;
+
+    if (totalCount > 5) {
+      alert(
+        `최대5개의 이미지만 업로드 가능합니다.\n 현재: ${currentCount}개, 추가: ${newCount}개, 합계: ${totalCount}개`
+      );
       e.target.value = "";
       return;
     }
@@ -155,9 +163,20 @@ const ProductEditPage = () => {
 
     try {
       const imageUrls = await uploadMultipleImages(files);
-      setFormData((prev) => ({ ...prev, additionalImages: imageUrls }));
-      setAdditionalImagePreviews(imageUrls);
+
+      const updatedImages = [...additionalImagePreviews, ...imageUrls];
+
+      setFormData((prev) => ({
+        ...prev,
+        additionalImages: updatedImages,
+      }));
+      setAdditionalImagePreviews(updatedImages);
+
+      e.target.value = "";
+
+      alert(`✅ ${imageUrls.length}개의 이미지가 추가되었습니다!`);
     } catch (error) {
+      console.error("❌ 업로드 실패:", error);
       alert("업로드 실패: " + error.message);
       e.target.value = "";
     }
@@ -385,7 +404,7 @@ const ProductEditPage = () => {
                     <Button
                       type="button"
                       onClick={() =>
-                        document.getElementById("mainImage").click()
+                        document.getElementById("mainImage")?.click()
                       }
                       variant="secondary"
                       className="mt-4"
@@ -411,19 +430,27 @@ const ProductEditPage = () => {
                       </button>
                       <div className="flex justify-center gap-3 mt-4">
                         <p className="text-sm text-green-600">
-                          <i className="bi bi-check-circle-fill mr-1"></i>현재
-                          이미지
+                          <i className="bi bi-check-circle-fill mr-1"></i>
+                          현재 이미지
                         </p>
                         <button
                           type="button"
                           onClick={() =>
-                            document.getElementById("mainImage").click()
+                            document.getElementById("mainImage")?.click()
                           }
                           className="text-sm text-blue-600 hover:text-blue-700"
                         >
                           <i className="bi bi-arrow-repeat mr-1"></i>이미지 변경
                         </button>
                       </div>
+                      <input
+                        type="file"
+                        id="mainImage"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleMainImageUpload}
+                        disabled={uploading}
+                      />
                     </div>
                   </div>
                 )}
@@ -445,6 +472,11 @@ const ProductEditPage = () => {
                 className="block text-sm font-semibold text-gray-700 mb-2"
               >
                 추가 이미지 (최대 5개)
+                {additionalImagePreviews.length > 0 && (
+                  <span className="text-sm text-gray-500 ml-2">
+                    현재 {additionalImagePreviews.length}/5개
+                  </span>
+                )}
               </label>
               <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary transition-colors">
                 {additionalImagePreviews.length === 0 ? (
@@ -468,7 +500,7 @@ const ProductEditPage = () => {
                     <Button
                       type="button"
                       onClick={() =>
-                        document.getElementById("additionalImages").click()
+                        document.getElementById("additionalImages")?.click()
                       }
                       variant="secondary"
                       className="mt-4"
@@ -478,33 +510,85 @@ const ProductEditPage = () => {
                     </Button>
                   </div>
                 ) : (
-                  <div className="mt-4">
-                    <div className="grid grid-cols-5 gap-2">
+                  <div>
+                    {/* 이미지 그리드 */}
+                    <div
+                      className={`grid gap-2 ${
+                        additionalImagePreviews.length === 1
+                          ? "grid-cols-1"
+                          : additionalImagePreviews.length === 2
+                          ? "grid-cols-2"
+                          : additionalImagePreviews.length === 3
+                          ? "grid-cols-3"
+                          : additionalImagePreviews.length === 4
+                          ? "grid-cols-4"
+                          : "grid-cols-5"
+                      }`}
+                    >
                       {additionalImagePreviews.map((url, index) => (
-                        <div key={index} className="relative">
+                        <div key={index} className="relative group">
                           <img
                             src={url}
                             alt={`추가 이미지 ${index + 1}`}
                             className="w-full h-24 object-cover rounded-lg"
+                            onError={(e) => {
+                              console.error(
+                                `이미지 ${index + 1} 로드 실패:`,
+                                url
+                              );
+                              e.target.src =
+                                "https://via.placeholder.com/150?text=Error";
+                            }}
                           />
+                          {/* 개별 삭제 버튼 */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newImages = additionalImagePreviews.filter(
+                                (_, i) => i !== index
+                              );
+                              setAdditionalImagePreviews(newImages);
+                              setFormData((prev) => ({
+                                ...prev,
+                                additionalImages: newImages,
+                              }));
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <i className="bi bi-x text-sm"></i>
+                          </button>
+                          {/* 이미지 번호 */}
+                          <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-2 py-0.5 rounded">
+                            {index + 1}
+                          </div>
                         </div>
                       ))}
                     </div>
+
+                    {/* 버튼들 */}
                     <div className="flex justify-between items-center mt-4">
                       <p className="text-sm text-green-600">
                         <i className="bi bi-check-circle-fill mr-1"></i>
                         {additionalImagePreviews.length}개 이미지
                       </p>
                       <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            document.getElementById("additionalImages").click()
-                          }
-                          className="text-sm text-blue-600 hover:text-blue-700"
-                        >
-                          <i className="bi bi-arrow-repeat mr-1"></i>이미지 변경
-                        </button>
+                        {/* ✅ 추가 버튼 (5개 미만일 때만) */}
+                        {additionalImagePreviews.length < 5 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              document
+                                .getElementById("additionalImages")
+                                ?.click()
+                            }
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            <i className="bi bi-plus-circle mr-1"></i>
+                            이미지 추가 ({5 - additionalImagePreviews.length}개
+                            더 가능)
+                          </button>
+                        )}
+                        {/* 전체 삭제 버튼 */}
                         <button
                           type="button"
                           onClick={removeAdditionalImages}
@@ -514,12 +598,23 @@ const ProductEditPage = () => {
                         </button>
                       </div>
                     </div>
+
+                    {/* ✅ 숨겨진 input */}
+                    <input
+                      type="file"
+                      id="additionalImages"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleAdditionalImagesUpload}
+                      disabled={uploading}
+                    />
                   </div>
                 )}
 
                 {/* Upload Progress */}
                 {uploading && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-90">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-90 rounded-lg">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
                     <p className="text-primary mt-2">업로드 중...</p>
                   </div>
