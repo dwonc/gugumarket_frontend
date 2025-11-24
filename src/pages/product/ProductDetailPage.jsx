@@ -7,6 +7,7 @@ import Footer from "../../components/common/Footer";
 import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Button from "../../components/common/Button";
+import CommentSection from "../../components/comment/CommentSection";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -533,8 +534,8 @@ const ProductDetailPage = () => {
             {product.content}
           </div>
         </div>
+        <CommentSection productId={product.productId} />
       </div>
-
       <Footer />
     </div>
   );

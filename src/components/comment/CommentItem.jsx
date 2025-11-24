@@ -1,0 +1,209 @@
+import { useState } from "react";
+import { useCommentStore } from "../../stores/commentStore";
+import useAuth from "../../hooks/useAuth";
+import Button from "../common/Button";
+
+const CommentItem = ({ comment, productId, replies = [], level = 0 }) => {
+  const { isAuthenticated, user } = useAuth();
+  const { createComment, updateComment, deleteComment } = useCommentStore();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
+
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+
+  // ✅ mine 필드 사용!
+  const isOwner = comment.mine;
+
+  // 댓글 수정
+  const handleUpdate = async () => {
+    if (!editContent.trim()) {
+      alert("내용을 입력해주세요.");
+      return;
+    }
+
+    try {
+      await updateComment(comment.id, editContent, productId); // ✅ comment.id
+      setIsEditing(false);
+      alert("✅ 댓글이 수정되었습니다!");
+    } catch (error) {
+      alert("❌ " + error.message);
+    }
+  };
+
+  // 댓글 삭제
+  const handleDelete = async () => {
+    if (!confirm("정말로 삭제하시겠습니까?")) return;
+
+    try {
+      await deleteComment(comment.id, productId); // ✅ comment.id
+      alert("✅ 댓글이 삭제되었습니다!");
+    } catch (error) {
+      alert("❌ " + error.message);
+    }
+  };
+
+  // 대댓글 작성
+  const handleReply = async () => {
+    if (!replyContent.trim()) {
+      alert("내용을 입력해주세요.");
+      return;
+    }
+
+    try {
+      await createComment(productId, replyContent, comment.id); // ✅ comment.id
+      setReplyContent("");
+      setIsReplying(false);
+      alert("✅ 답글이 작성되었습니다!");
+    } catch (error) {
+      alert("❌ " + error.message);
+    }
+  };
+
+  return (
+    <div className={`${level > 0 ? "ml-12 mt-3" : ""}`}>
+      <div
+        className={`bg-gray-50 rounded-lg p-4 ${
+          level > 0 ? "border-l-4 border-primary/40" : ""
+        }`}
+      >
+        {/* 댓글 헤더 */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
+              <i className="bi bi-person text-white text-sm"></i>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                {/* ✅ userNickname 사용 */}
+                <p className="font-bold text-gray-800 text-sm">
+                  {comment.userNickname}
+                </p>
+                {level > 0 && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                    답글
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500">{comment.createdAt}</p>
+            </div>
+          </div>
+
+          {/* 수정/삭제 버튼 (본인만) */}
+          {isOwner && !isEditing && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-xs text-blue-600 hover:text-blue-700"
+              >
+                <i className="bi bi-pencil mr-1"></i>수정
+              </button>
+              <button
+                onClick={handleDelete}
+                className="text-xs text-red-500 hover:text-red-700"
+              >
+                <i className="bi bi-trash mr-1"></i>삭제
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 댓글 내용 */}
+        {isEditing ? (
+          <div>
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              rows="2"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+              text-sm
+            />
+            <div className="flex gap-2 mt-2">
+              <Button
+                onClick={handleUpdate}
+                variant="primary"
+                className="text-xs px-3 py-1"
+              >
+                저장
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditContent(comment.content);
+                }}
+                variant="secondary"
+                className="text-xs px-3 py-1"
+              >
+                취소
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-700 mb-3 whitespace-pre-wrap text-sm">
+            {comment.content}
+          </p>
+        )}
+
+        {/* 답글 버튼 (최상위 댓글만) */}
+        {level === 0 && !isEditing && isAuthenticated && (
+          <button
+            onClick={() => setIsReplying(!isReplying)}
+            className="text-xs text-gray-600 hover:text-primary font-medium"
+          >
+            <i className="bi bi-reply mr-1"></i>
+            답글 {replies.length > 0 && `(${replies.length})`}
+          </button>
+        )}
+
+        {/* 답글 작성 폼 */}
+        {isReplying && (
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <textarea
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              placeholder="답글을 입력하세요..."
+              rows="2"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary resize-none text-sm"
+            />
+            <div className="flex gap-2 mt-2">
+              <Button
+                onClick={handleReply}
+                variant="primary"
+                className="text-xs px-3 py-1"
+              >
+                답글 작성
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsReplying(false);
+                  setReplyContent("");
+                }}
+                variant="secondary"
+                className="text-xs px-3 py-1"
+              >
+                취소
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 대댓글 목록 */}
+      {replies.length > 0 && (
+        <div className="mt-2 space-y-2">
+          {replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              productId={productId}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CommentItem;
