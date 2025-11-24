@@ -7,6 +7,8 @@ import ErrorMessage from "../../components/common/ErrorMessage";
 import ProductCard from "../../components/product/ProductCard";
 import ProductsSearch from "../../components/product/ProductSearch.jsx";
 import ProductFilter from "../../components/product/ProductFilter";
+import DistrictFilter from "../../components/product/DistrictFilter"; // 🔥 추가
+import SortFilter from "../../components/product/SortFilter"; // 🔥 추가
 import ProductGrid from "../../components/product/ProductGrid";
 import useProducts from "../../hooks/useProducts";
 
@@ -14,6 +16,7 @@ const MainPage = () => {
   const {
     products,
     categories,
+    districts, // 🔥 추가
     pagination,
     loading,
     error,
@@ -21,6 +24,8 @@ const MainPage = () => {
     changePage,
     changeCategory,
     changeKeyword,
+    changeDistrict, // 🔥 추가
+    changeSort, // 🔥 추가
     refetch,
   } = useProducts();
 
@@ -48,8 +53,59 @@ const MainPage = () => {
         onCategoryChange={changeCategory}
       />
 
+      {/* 🔥 지역 + 정렬 필터 추가 */}
+      <div className="bg-white py-4 shadow-sm border-t">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* 왼쪽: 지역 필터 */}
+            <div className="flex items-center gap-3">
+              <span className="text-gray-600 font-medium">지역:</span>
+              <DistrictFilter
+                selectedDistrict={params.district}
+                onDistrictChange={changeDistrict}
+              />
+            </div>
+
+            {/* 오른쪽: 정렬 필터 */}
+            <div className="flex items-center gap-3">
+              <span className="text-gray-600 font-medium">정렬:</span>
+              <SortFilter
+                currentSort={params.sort || ["createdDate", "desc"]}
+                onSortChange={changeSort}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-3xl font-bold text-gray-800 mb-8">상품 목록</h2>
+        {/* 🔥 필터 적용 상태 표시 */}
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-3xl font-bold text-gray-800">상품 목록</h2>
+
+          {(params.district || params.keyword || params.categoryId) && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-600">필터 적용:</span>
+              {params.district && (
+                <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                  📍 {params.district}
+                </span>
+              )}
+              {params.keyword && (
+                <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                  🔍 {params.keyword}
+                </span>
+              )}
+              {params.categoryId && (
+                <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                  📂{" "}
+                  {categories.find((c) => c.categoryId === params.categoryId)
+                    ?.categoryName || "카테고리"}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         {loading && (
           <div className="flex justify-center items-center py-20">
