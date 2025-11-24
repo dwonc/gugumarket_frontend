@@ -1,3 +1,4 @@
+// src/pages/mypage/MyPage.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../api/axios";
@@ -91,22 +92,17 @@ const MyPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [logout, navigate]); // user와 activeTab은 fetchData 내부 로직에 직접 사용되지 않아 제거
+  }, [logout, navigate]);
 
   // ==========================================================
   // ✅ 2. useEffect로 데이터 로딩 및 리디렉션 처리
   // ==========================================================
-  // ✅ useEffect 수정: 인증 상태가 확정(true/false)되면 실행
   useEffect(() => {
-    // isAuthenticated가 true로 확정된 경우에만 데이터 로딩 시작
     if (isAuthenticated === true) {
       fetchData();
-    }
-    // isAuthenticated가 false로 확정된 경우에만 로그인 페이지로 리디렉션
-    else if (isAuthenticated === false) {
+    } else if (isAuthenticated === false) {
       navigate("/login");
     }
-    // (isAuthenticated가 null 또는 undefined인 초기 상태일 때는 아무것도 하지 않고 로딩 화면 유지)
   }, [isAuthenticated, fetchData, navigate]);
 
   // URL 쿼리 파라미터에서 탭 상태를 읽어옴
@@ -118,10 +114,9 @@ const MyPage = () => {
     }
   }, [location.search]);
 
-  // Tab 전환 함수 (mypage.html의 showTab 로직 반영)
+  // Tab 전환 함수
   const showTab = (tabName) => {
     setActiveTab(tabName);
-    // 스크롤 자동 조정은 필요하다면 useEffect 등에서 처리
   };
 
   // 금액 포맷 함수
@@ -133,7 +128,6 @@ const MyPage = () => {
   const formatDate = (dateTimeString) => {
     if (!dateTimeString) return "N/A";
     const date = new Date(dateTimeString);
-    // 'YYYY-MM-DD HH:mm' 포맷
     return date
       .toLocaleString("ko-KR", {
         year: "numeric",
@@ -149,63 +143,59 @@ const MyPage = () => {
       .replace(" ", " ");
   };
 
-  // 트랜잭션 상태를 디자인에 맞게 변환하는 함수
+  // ✅ 트랜잭션 상태를 디자인에 맞게 변환하는 함수 (수정됨!)
   const getStatusBadge = (statusName, isSeller) => {
     const statusMap = {
       // 구매내역 (Buyer)
       PENDING: { text: "입금 대기", class: "bg-yellow-100 text-yellow-700" },
-      COMPLETED: { text: "구매 확정", class: "bg-green-100 text-green-700" }, // mypage.html 구매내역
+      COMPLETED: { text: "구매 확정", class: "bg-green-100 text-green-700" },
       CANCELLED: { text: "거래 취소", class: "bg-red-100 text-red-700" },
       // 판매내역 (Seller)
       SELLER_PENDING: {
         text: "입금 확인 대기",
         class: "bg-orange-100 text-orange-700",
-      }, // mypage.html 판매내역
+      },
       SELLER_COMPLETED: {
         text: "판매 완료",
         class: "bg-blue-100 text-blue-700",
-      }, // mypage.html 판매내역
-      SELLING: { text: "판매 중", class: "bg-indigo-100 text-indigo-700" }, // ✅ 판매 중 상태 추가
+      },
+      SELLING: { text: "판매 중", class: "bg-indigo-100 text-indigo-700" },
     };
 
-    // MypageController의 DTO는 status.name()을 반환함.
     const key = isSeller ? `SELLER_${statusName}` : statusName;
     const defaultStatus = {
       text: statusName,
       class: "bg-gray-100 text-gray-700",
     };
 
-    return statusMap[key] || statusMap[statusName] || defaultStatus;
-  };
+    // ✅ 반환문 추가!
+    return statusMap[key] || defaultStatus;
+  }; // ✅ 함수 제대로 닫기!
 
-  // 찜 해제 (mypage.html의 JS 로직 반영)
+  // 찜 해제
   const handleUnlike = useCallback(
     async (productId) => {
       if (!window.confirm("찜 목록에서 제거하시겠습니까?")) return;
 
-      // ✅ CSRF 토큰 가져오기 및 헤더 설정
       const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
       const csrfHeader = document.querySelector(
         'meta[name="_csrf_header"]'
       )?.content;
 
       const headers = {
-        // Content-Type은 axios.js에 기본 설정되어 있지만, 명시적으로 추가
         "Content-Type": "application/json",
       };
 
       if (csrfToken && csrfHeader) {
-        headers[csrfHeader] = csrfToken; // 스프링 시큐리티용 CSRF 헤더 추가
+        headers[csrfHeader] = csrfToken;
       }
 
       try {
-        // LikeController의 실제 경로: /api/products/{productId}/like
         const res = await api.post(`/api/products/${productId}/like`, null, {
           headers: headers,
         });
 
         if (res.status === 200) {
-          // UI에서 즉시 제거
           const updatedLikes = data.likes.filter(
             (like) => like.productId !== productId
           );
@@ -214,7 +204,6 @@ const MyPage = () => {
         }
       } catch (err) {
         console.error("찜 해제 오류:", err);
-        // 401 에러 처리 (Axios Interceptor에서 1차 처리 후, 최종 실패 시)
         if (err.response?.status === 401) {
           alert("세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.");
           logout();
@@ -225,15 +214,14 @@ const MyPage = () => {
       }
     },
     [data, logout, navigate]
-  ); // ✅ 의존성 추가: data, logout, navigate
+  );
 
-  // 입금 확인 처리 함수 (mypage.html의 JS 로직 반영)
+  // 입금 확인 처리 함수
   const confirmPayment = useCallback(
     async (transactionId) => {
       if (!window.confirm("입금을 확인하셨습니까? 거래를 완료 처리합니다."))
         return;
 
-      // ✅ CSRF 토큰 가져오기 (POST 요청이므로 추가)
       const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
       const csrfHeader = document.querySelector(
         'meta[name="_csrf_header"]'
@@ -248,7 +236,6 @@ const MyPage = () => {
       }
 
       try {
-        // TransactionController의 실제 경로: /api/transactions/{transactionId}/complete
         const response = await api.post(
           `/api/transactions/${transactionId}/complete`,
           null,
@@ -257,14 +244,12 @@ const MyPage = () => {
 
         if (response.status === 200) {
           alert("거래가 완료되었습니다.");
-          // 데이터 새로고침
           fetchData();
         } else {
           alert("처리 중 오류가 발생했습니다.");
         }
       } catch (error) {
         console.error("입금 확인 오류:", error);
-        // 401 에러 처리
         if (error.response?.status === 401) {
           alert("세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.");
           logout();
@@ -275,12 +260,11 @@ const MyPage = () => {
       }
     },
     [fetchData, logout, navigate]
-  ); // ✅ 의존성 추가: fetchData, logout, navigate
+  );
 
-  // 알림 읽음 처리 (mypage.html의 JS 로직 반영)
+  // 알림 읽음 처리
   const markAsRead = useCallback(
     async (notificationId) => {
-      // ✅ CSRF 토큰 가져오기 (POST 요청이므로 추가)
       const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
       const csrfHeader = document.querySelector(
         'meta[name="_csrf_header"]'
@@ -295,12 +279,9 @@ const MyPage = () => {
       }
 
       try {
-        // NotificationController의 실제 경로: /api/notifications/{notificationId}/read
-        // PATCH 요청 사용
         await api.patch(`/api/notifications/${notificationId}/read`, null, {
           headers: headers,
         });
-        // UI 업데이트
         setData((prevData) => {
           const updatedNotifications = prevData.recentNotifications.map(
             (notif) =>
@@ -327,7 +308,7 @@ const MyPage = () => {
     [logout, navigate]
   );
 
-  // ✅ 수정된 로딩 조건 (isAuthenticated === null을 추가하여 초기 플리커 방지)
+  // 로딩 조건
   if (loading || !data || isAuthenticated === null) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -356,7 +337,7 @@ const MyPage = () => {
     );
   }
 
-  // 데이터 구조 분해 (MypageController.java의 응답 구조 사용)
+  // 데이터 구조 분해
   const {
     user: apiUser,
     purchases,
@@ -367,7 +348,6 @@ const MyPage = () => {
     products,
   } = data;
 
-  // --- 탭 콘텐츠 렌더링 함수 ---
   // 탭 정보 정의
   const tabs = [
     {
@@ -395,12 +375,13 @@ const MyPage = () => {
       count: unreadCount,
     },
   ];
-  // --- 메인 렌더링 ---
+
+  // 메인 렌더링
   return (
     <>
       <Navbar />
 
-      {/* Main Content (mypage.html 반영) */}
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* User Info Card */}
         <UserProfile user={apiUser} />
@@ -432,7 +413,6 @@ const MyPage = () => {
                     {tab.count}
                   </span>
                 )}
-                {/* 판매내역 탭의 총 개수 표시 (optional) */}
                 {tab.name === "sales" && (
                   <span className="ml-1 text-sm text-gray-500 font-normal">
                     ({tab.count || 0})

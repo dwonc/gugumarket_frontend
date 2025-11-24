@@ -8,17 +8,15 @@ import LoginPage from "../pages/auth/LoginPage";
 import SignupPage from "../pages/auth/SignupPage";
 import MyPage from "../pages/user/MyPage";
 import Edit from "../pages/user/Edit";
-// // import SignupPage from "../pages/auth/SignupPage";
 import ProductDetailPage from "../pages/product/ProductDetailPage";
 import ProductWritePage from "../pages/product/ProductWritePage";
 import ProductEditPage from "../pages/product/ProductEditPage";
 import FindIdPage from "../pages/auth/FindIdPage";
 import FindPasswordPage from "../pages/auth/FindPasswordPage";
-// import PurchasePage from "../pages/transaction/PurchasePage";
-// import PurchaseCompletePage from "../pages/transaction/PurchaseCompletePage";
-// import TransactionDetailPage from "../pages/transaction/TransactionDetailPage";
+import PurchasePage from "../pages/transaction/PurchasePage";
+import PurchaseCompletePage from "../pages/transaction/PurchaseCompletePage";
+import TransactionDetailPage from "../pages/transaction/TransactionDetailPage";
 import KakaoCallbackPage from "../pages/auth/KakaoCallbackPage";
-// import MyPage from "../pages/user/MyPage";
 import NotificationPage from "../pages/notification/NotificationPage";
 
 import QnaListPage from "../pages/qna/QnaListPage";
@@ -81,18 +79,18 @@ const router = createBrowserRouter([
         path: "/products/:id/edit",
         element: <ProductEditPage />,
       },
-      // {
-      //   path: "/products/:id/purchase",
-      //   element: <PurchasePage />,
-      // },
-      // {
-      //   path: "/purchase/complete/:transactionId",
-      //   element: <PurchaseCompletePage />,
-      // },
-      // {
-      //   path: "/transactions/:id",
-      //   element: <TransactionDetailPage />,
-      // },
+      {
+        path: "/products/:id/purchase",
+        element: <PurchasePage />,
+      },
+      {
+        path: "/purchase/complete/:transactionId",
+        element: <PurchaseCompletePage />,
+      },
+      {
+        path: "/transactions/:id",
+        element: <TransactionDetailPage />,
+      },
       {
         path: "/notifications",
         element: <NotificationPage />,
