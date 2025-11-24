@@ -7,6 +7,8 @@ import Footer from "../../components/common/Footer";
 import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Button from "../../components/common/Button";
+import ShareModal from "@/components/product/ShareModal.jsx";
+import ProductMetaTags from "@/components/product/ProductMetaTags.jsx";
 
 // ✅ 백엔드 기본 URL 설정 (MyPage.jsx와 동일)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -65,6 +67,7 @@ const ProductDetailPage = () => {
     const [selectedStatus, setSelectedStatus] = useState("");
     const [isLiked, setIsLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
+    const [isShareModalOpen,setIsShareModalOpen] = useState(false);
 
     // 상품 정보 불러오기
     useEffect(() => {
@@ -203,9 +206,15 @@ const ProductDetailPage = () => {
             alert(`❌ 상품 삭제 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
         }
     };
+    // 공유하기 핸들러
+    const handleShare = () => {
+        setIsShareModalOpen(true);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
+            <productMetaTags product={product}/>
+
             <Navbar />
 
             {/* Breadcrumb */}
@@ -547,7 +556,7 @@ const ProductDetailPage = () => {
 
                             {/* Share & Report */}
                             <div className="flex gap-3 mt-4">
-                                <Button variant="secondary" className="flex-1">
+                                <Button onClick={handleShare} variant="secondary" className="flex-1">
                                     <i className="bi bi-share mr-2"></i>공유하기
                                 </Button>
                                 <Button variant="secondary" className="flex-1">
@@ -566,7 +575,11 @@ const ProductDetailPage = () => {
                     </div>
                 </div>
             </div>
-
+            <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                product={product}
+            />
             <Footer />
         </div>
     );
