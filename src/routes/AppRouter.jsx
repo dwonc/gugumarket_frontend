@@ -24,6 +24,8 @@ import QnaFormPage from "../pages/qna/QnaFormPage";
 import AdminPage from "../pages/admin/AdminPage";
 import UserDetailPage from "../pages/admin/UserDetailPage";
 import ErrorPage from "../pages/ErrorPage";
+import TermsPage from "../pages/etc/TermsPage";
+import AboutPage from "../pages/etc/AboutPage";
 
 const router = createBrowserRouter([
   // Public Routes
@@ -127,6 +129,16 @@ const router = createBrowserRouter([
     path: "*",
     element: <ErrorPage />,
   },
+
+    {
+        path: "/terms",
+        element: <TermsPage />,
+    },
+    {
+        path: "/about",
+        element: <AboutPage />,
+    },
+
 ]);
 
 export default router;
