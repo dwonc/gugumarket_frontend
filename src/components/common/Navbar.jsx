@@ -13,6 +13,7 @@ const Navbar = () => {
     console.log("📊 Navbar - 인증 상태:", {
       isAuthenticated,
       user,
+      role: user?.role, // ✅ role 확인
       hasAccessToken: !!useAuthStore.getState().accessToken,
     });
   }, [isAuthenticated, user]);
@@ -27,10 +28,19 @@ const Navbar = () => {
       }, 30000);
 
       return () => clearInterval(interval);
+    } else {
+      // ✅ 인증되지 않았으면 개수 초기화
+      setUnreadCount(0);
     }
   }, [isAuthenticated]);
 
   const fetchUnreadCount = async () => {
+    // ✅ 인증 체크 추가
+    if (!isAuthenticated) {
+      setUnreadCount(0);
+      return;
+    }
+
     try {
       const response = await notificationApi.getUnreadCount();
       if (response.data.success) {
@@ -38,6 +48,11 @@ const Navbar = () => {
       }
     } catch (error) {
       console.error("알림 개수 조회 실패:", error);
+      // ✅ 401 에러 시 로그아웃 처리
+      if (error.response?.status === 401) {
+        console.log("인증 만료, 알림 개수 초기화");
+        setUnreadCount(0);
+      }
     }
   };
 
@@ -45,6 +60,9 @@ const Navbar = () => {
     logout();
     navigate("/login");
   };
+
+  // ✅ 관리자 여부 확인
+  const isAdmin = user?.role === "ADMIN";
 
   return (
     <>
@@ -57,6 +75,12 @@ const Navbar = () => {
                 <span>
                   <i className="bi bi-person-circle mr-2"></i>
                   {user?.nickname || user?.userName || "사용자"}님
+                  {/* ✅ 관리자 배지 */}
+                  {isAdmin && (
+                    <span className="ml-2 bg-yellow-400 text-gray-800 px-2 py-0.5 rounded-full text-xs font-bold">
+                      관리자
+                    </span>
+                  )}
                 </span>
               ) : (
                 <span>
@@ -151,6 +175,18 @@ const Navbar = () => {
               >
                 Q&A
               </Link>
+
+              {/* ✅ 관리자 메뉴 (관리자만 표시) */}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="text-yellow-600 hover:text-yellow-700 font-bold transition-colors flex items-center space-x-1"
+                >
+                  <i className="bi bi-shield-check"></i>
+                  <span>관리자</span>
+                </Link>
+              )}
+
               {/* ✅ 상품 등록 버튼 (로그인한 사용자만) */}
               {isAuthenticated && (
                 <Link
@@ -161,8 +197,6 @@ const Navbar = () => {
                   <span>상품 등록</span>
                 </Link>
               )}
-
-              {/* 관리자 메뉴 */}
             </div>
           </div>
         </div>
