@@ -42,6 +42,8 @@ export const useProductStore = create((set, get) => ({
         isLiked: data.isLiked,
         likeCount: data.likeCount,
         interestedBuyers: data.interestedBuyers,
+        reportCount: data.reportCount, // 🎯🔥 추가! 🔥🎯
+
       };
     } catch (error) {
       console.error("❌ fetchProduct 실패:", error);

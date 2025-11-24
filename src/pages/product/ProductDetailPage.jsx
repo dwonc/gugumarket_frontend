@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useProductStore } from "../../stores/productStore";
 import useAuth from "../../hooks/useAuth";
 import useProductPermission from "../../hooks/useProductPermission";
+import reportApi from "../../api/reportApi";
 
 // 공통 컴포넌트
 import Navbar from "../../components/common/Navbar";
@@ -44,6 +45,7 @@ const ProductDetailPage = () => {
   );
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [reportCount, setReportCount] = useState(0); // ✅ 신고 수 상태 추가
 
   // 상품 정보 불러오기
   useEffect(() => {
@@ -55,6 +57,8 @@ const ProductDetailPage = () => {
           const productData = data.product || data;
           if (productData) {
             console.log("✅ 서버에서 받은 mainImage:", productData.mainImage);
+            // ✅ 신고 수 설정
+            setReportCount(data.reportCount || 0);
           }
         })
         .catch((err) => {
@@ -97,6 +101,29 @@ const ProductDetailPage = () => {
   // 공유하기 핸들러
   const handleShare = () => {
     setIsShareModalOpen(true);
+  };
+
+  // ✅ 신고하기 핸들러 추가
+  const handleReport = async () => {
+    if (!isAuthenticated) {
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+      return;
+    }
+
+    if (!confirm("이 게시물을 신고하시겠습니까?")) {
+      return;
+    }
+
+    try {
+      await reportApi.create(product.productId, "부적절한 게시물");
+      alert("신고가 접수되었습니다.");
+      // ✅ 신고 후 상품 정보 다시 불러와서 reportCount 업데이트
+      fetchProduct(id);
+    } catch (err) {
+      console.error("신고 실패:", err);
+      alert(err.response?.data?.message || "신고 접수 중 오류가 발생했습니다.");
+    }
   };
 
   // 로딩 중
@@ -155,8 +182,14 @@ const ProductDetailPage = () => {
           {/* Right: Product Info */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-lg p-8">
-              <ProductInfoSection product={product} />
+              {/* ✅ isAdmin과 reportCount props 전달 */}
+              <ProductInfoSection
+                product={product}
+                isAdmin={isAdmin}
+                reportCount={reportCount}
+              />
 
+              {/* ✅ onReport props 전달 */}
               <ProductActionSection
                 product={product}
                 canEdit={canEdit}
@@ -166,6 +199,7 @@ const ProductDetailPage = () => {
                 onDelete={handleDelete}
                 onLikeToggle={toggleLike}
                 onShare={handleShare}
+                onReport={handleReport}
               />
             </div>
           </div>

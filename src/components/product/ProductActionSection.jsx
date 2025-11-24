@@ -11,6 +11,7 @@ const ProductActionSection = ({
   onDelete,
   onLikeToggle,
   onShare,
+  onReport, // ✅ 신고하기 핸들러 추가
 }) => {
   if (!product) return null;
 
@@ -36,7 +37,8 @@ const ProductActionSection = ({
         <Button onClick={onShare} variant="secondary" className="flex-1">
           <i className="bi bi-share mr-2"></i>공유하기
         </Button>
-        <Button variant="secondary" className="flex-1">
+        {/* ✅ 신고하기 버튼에 onClick 핸들러 연결 */}
+        <Button onClick={onReport} variant="secondary" className="flex-1">
           <i className="bi bi-flag mr-2"></i>신고하기
         </Button>
       </div>
