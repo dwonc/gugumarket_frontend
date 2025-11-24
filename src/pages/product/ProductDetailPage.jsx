@@ -8,20 +8,61 @@ import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Button from "../../components/common/Button";
 
+// ✅ 백엔드 기본 URL 설정 (MyPage.jsx와 동일)
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+// primary: #6B4F4F 색상을 배경색으로 사용한 SVG Data URI (MyPage.jsx와 동일)
+const NO_IMAGE_PLACEHOLDER =
+  "data:image/svg+xml;base64," +
+  btoa(
+    '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">' +
+      '<rect width="100%" height="100%" fill="#6B4F4F"/>' + // primary 색상
+      '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" ' +
+      'font-family="sans-serif" font-size="16" fill="#FFFFFF">No Image</text>' +
+      "</svg>"
+  );
+
+// ✅ 이미지 경로 생성 헬퍼 함수 최종 수정: 절대 URL 중복 방지
+
+const getProductImageUrl = (imagePath) => {
+  // 1. 이미지가 없으면 플레이스홀더 반환
+  if (!imagePath || imagePath.trim() === "") {
+    return NO_IMAGE_PLACEHOLDER;
+  }
+
+  // 2. 🔥 수정된 로직: 경로가 'http://' 또는 'https://'로 시작하면
+  //    이미 절대 경로이므로 그대로 반환합니다.
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+
+  // 3. (만약 서버가 상대 경로를 보낸다면) Base URL 결합 로직 유지
+  //    API_BASE_URL의 끝 슬래시를 제거 (있든 없든 제거)
+  const baseUrl = API_BASE_URL.replace(/\/$/, "");
+
+  //    imagePath의 시작 슬래시를 제거 (있든 없든 제거)
+  const cleanedPath = imagePath.replace(/^\//, "");
+
+  // 4. 결합
+  return `${baseUrl}/${cleanedPath}`;
+};
+
 const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated = false, user = null } = useAuth() || {};
 
+  const productStore = useProductStore(); // 🌟 store 전체를 가져와서 ESLint 경고 해결
+
   const {
     product,
     loading,
-    error,
     fetchProduct,
     toggleLike,
     updateProductStatus,
     deleteProduct,
-  } = useProductStore();
+  } = productStore; // error를 구조 분해 할당에서 제외
 
   const [selectedImage, setSelectedImage] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -38,6 +79,7 @@ const ProductDetailPage = () => {
           const productData = data.product || data;
 
           if (productData) {
+            console.log("✅ 서버에서 받은 mainImage:", productData.mainImage); // ✅ 이 로그를 추가
             setSelectedImage(productData.mainImage);
             setSelectedStatus(productData.status);
             setIsLiked(data.isLiked || false);
@@ -59,13 +101,13 @@ const ProductDetailPage = () => {
     );
   }
 
-  // 에러 발생
-  if (error) {
+  // 에러 발생 (🌟 productStore.error로 직접 접근)
+  if (productStore.error) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
         <div className="max-w-7xl mx-auto px-4 py-12">
-          <ErrorMessage message={error} type="error" />
+          <ErrorMessage message={productStore.error} type="error" />
           <Button onClick={() => navigate(-1)} className="mt-4">
             <i className="bi bi-arrow-left mr-2"></i>돌아가기
           </Button>
@@ -91,25 +133,9 @@ const ProductDetailPage = () => {
     );
   }
 
-  // 판매자 및 관리자 인지 확인
+  // 판매자 여부 확인
   const isSeller =
-    isAuthenticated && user?.userName === product?.sellerUsername;
-
-  const isAdmin = isAuthenticated && user?.role === "ADMIN";
-
-  const canEdit = isSeller || isAdmin;
-
-  console.log("🔐 권한 확인 (상세):", {
-    isAuthenticated,
-    "user 전체": user, // ← 추가!
-    userName: user?.userName,
-    "user?.role": user?.role, // ← 확인!
-    "user?.role 타입": typeof user?.role,
-    sellerUsername: product?.sellerUsername,
-    isSeller,
-    isAdmin,
-    canEdit,
-  });
+    isAuthenticated && user?.username === product.seller?.userName;
 
   // 이미지 변경
   const handleImageChange = (imageUrl) => {
@@ -125,7 +151,7 @@ const ProductDetailPage = () => {
         setLikeCount(result.likeCount);
       }
     } catch (error) {
-      alert("오류가 발생했습니다.");
+      alert(`오류가 발생했습니다: ${error.message || error}`);
     }
   };
 
@@ -177,7 +203,11 @@ const ProductDetailPage = () => {
       alert("✅ 상품이 삭제되었습니다.");
       navigate("/mypage");
     } catch (error) {
-      alert("❌ 상품 삭제 중 오류가 발생했습니다.");
+      alert(
+        `❌ 상품 삭제 중 오류가 발생했습니다: ${
+          error.message || "알 수 없는 오류"
+        }`
+      );
     }
   };
 
@@ -217,15 +247,15 @@ const ProductDetailPage = () => {
             {/* Main Image */}
             <div className="bg-white rounded-2xl overflow-hidden shadow-lg">
               <img
-                src={selectedImage}
+                // ✅ 헬퍼 함수를 사용하고 src={value || null} 패턴 적용
+                src={getProductImageUrl(selectedImage) || null}
                 alt={product.title}
                 className="w-full h-96 object-cover"
                 onError={(e) => {
-                  if (!e.target.dataset.errorHandled) {
-                    e.target.dataset.errorHandled = "true";
-                    e.target.src =
-                      "https://via.placeholder.com/600x400/cccccc/ffffff?text=No+Image";
-                  }
+                  // ✅ 통일된 NO_IMAGE_PLACEHOLDER 및 에러 핸들링 로직 사용
+                  if (e.target.dataset.hadError) return;
+                  e.target.dataset.hadError = "true";
+                  e.target.src = NO_IMAGE_PLACEHOLDER;
                 }}
               />
             </div>
@@ -242,9 +272,16 @@ const ProductDetailPage = () => {
                 onClick={() => handleImageChange(product.mainImage)}
               >
                 <img
-                  src={product.mainImage}
+                  // ✅ 헬퍼 함수를 사용하고 src={value || null} 패턴 적용
+                  src={getProductImageUrl(product.mainImage) || null}
                   alt="메인 이미지"
                   className="w-full h-24 object-cover"
+                  onError={(e) => {
+                    // ✅ 썸네일 이미지 로드 실패 시 No Image 표시
+                    if (e.target.dataset.hadError) return;
+                    e.target.dataset.hadError = "true";
+                    e.target.src = NO_IMAGE_PLACEHOLDER;
+                  }}
                 />
               </div>
 
@@ -276,17 +313,19 @@ const ProductDetailPage = () => {
                         onClick={() => handleImageChange(imageUrl)}
                       >
                         <img
-                          src={imageUrl}
+                          // ✅ 헬퍼 함수를 사용하고 src={value || null} 패턴 적용
+                          src={getProductImageUrl(imageUrl) || null}
                           alt={`상품 이미지 ${index + 1}`}
                           className="w-full h-24 object-cover"
                           onError={(e) => {
+                            // ✅ 썸네일 이미지 로드 실패 시 No Image 표시
                             console.error(
                               `이미지 ${index + 1} 로드 실패:`,
                               imageUrl
                             );
                             if (!e.target.dataset.errorHandled) {
                               e.target.dataset.errorHandled = "true";
-                              e.target.style.display = "none"; // 실패한 이미지 숨기기
+                              e.target.src = NO_IMAGE_PLACEHOLDER; // 실패한 이미지 No Image로 대체
                             }
                           }}
                         />
@@ -315,7 +354,7 @@ const ProductDetailPage = () => {
               <div className="space-y-3 py-6 border-y border-gray-200">
                 <div className="flex justify-between">
                   <span className="text-gray-600">카테고리</span>
-                  <span className="font-medium">{product.categoryName}</span>
+                  <span className="font-medium">{product.category?.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">상태</span>
@@ -348,7 +387,7 @@ const ProductDetailPage = () => {
               {/* Action Buttons */}
               <div className="mt-6">
                 {/* 판매자인 경우 */}
-                {canEdit ? (
+                {isSeller ? (
                   <>
                     {/* 상태 변경 UI */}
                     <div className="mb-4 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
