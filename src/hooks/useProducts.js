@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getMainPageData } from "../api/mainApi";
+import { getProductList, getCategories, getDistricts } from "../api/mainApi";
 
 /**
  * 메인 페이지 상품 데이터를 관리하는 커스텀 훅
@@ -7,6 +7,7 @@ import { getMainPageData } from "../api/mainApi";
 const useProducts = (initialParams = {}) => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [districts, setDistricts] = useState([]); // 🔥 추가
   const [pagination, setPagination] = useState({
     currentPage: 0,
     totalPages: 0,
@@ -20,35 +21,52 @@ const useProducts = (initialParams = {}) => {
   const [params, setParams] = useState({
     page: 0,
     size: 12,
+    sort: ["createdDate", "desc"], // 🔥 추가: 기본 정렬 (최신순)
     ...initialParams,
   });
 
-  // 데이터 가져오기
+  // 🔥 카테고리 목록 가져오기
+  const fetchCategories = async () => {
+    try {
+      const response = await getCategories(true);
+      if (response.success) {
+        setCategories(response.data || []);
+      }
+    } catch (err) {
+      console.error("카테고리 조회 실패:", err);
+    }
+  };
+
+  // 🔥 지역 목록 가져오기
+  const fetchDistricts = async () => {
+    try {
+      const response = await getDistricts();
+      if (response.success) {
+        setDistricts(response.districts || []);
+      }
+    } catch (err) {
+      console.error("지역 목록 조회 실패:", err);
+    }
+  };
+
+  // 🔥 상품 목록 가져오기
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await getMainPageData(params);
+      const response = await getProductList(params);
 
       if (response.success) {
-        const { products: productData, categories: categoryData } =
-          response.data;
+        setProducts(response.content || []);
 
-        // 상품 데이터 설정
-        setProducts(productData.content || []);
-
-        // 카테고리 데이터 설정
-        setCategories(categoryData || []);
-
-        // 페이지네이션 정보 설정
         setPagination({
-          currentPage: productData.currentPage,
-          totalPages: productData.totalPages,
-          totalElements: productData.totalElements,
-          size: productData.size,
-          first: productData.first,
-          last: productData.last,
+          currentPage: response.currentPage,
+          totalPages: response.totalPages,
+          totalElements: response.totalElements,
+          size: response.size,
+          first: response.first,
+          last: response.last,
         });
       } else {
         setError(response.message || "데이터를 불러오는데 실패했습니다.");
@@ -61,7 +79,13 @@ const useProducts = (initialParams = {}) => {
     }
   };
 
-  // params 변경 시 데이터 재조회
+  // 🔥 최초 로드: 카테고리 + 지역 목록 조회
+  useEffect(() => {
+    fetchCategories();
+    fetchDistricts();
+  }, []);
+
+  // params 변경 시 상품 재조회
   useEffect(() => {
     fetchProducts();
   }, [params]);
@@ -76,7 +100,7 @@ const useProducts = (initialParams = {}) => {
     setParams((prev) => ({
       ...prev,
       categoryId: categoryId || undefined,
-      page: 0, // 카테고리 변경 시 첫 페이지로
+      page: 0,
     }));
   };
 
@@ -85,18 +109,37 @@ const useProducts = (initialParams = {}) => {
     setParams((prev) => ({
       ...prev,
       keyword: keyword || undefined,
-      page: 0, // 검색 시 첫 페이지로
+      page: 0,
+    }));
+  };
+
+  // 🔥 지역 필터 변경
+  const changeDistrict = (district) => {
+    setParams((prev) => ({
+      ...prev,
+      district: district || undefined,
+      page: 0,
+    }));
+  };
+
+  // 🔥 정렬 변경
+  const changeSort = (sortField, sortDirection) => {
+    setParams((prev) => ({
+      ...prev,
+      sort: [sortField, sortDirection],
+      page: 0,
     }));
   };
 
   // 필터 초기화
   const resetFilters = () => {
-    setParams({ page: 0, size: 12 });
+    setParams({ page: 0, size: 12, sort: ["createdDate", "desc"] });
   };
 
   return {
     products,
     categories,
+    districts, // 🔥 추가
     pagination,
     loading,
     error,
@@ -104,6 +147,8 @@ const useProducts = (initialParams = {}) => {
     changePage,
     changeCategory,
     changeKeyword,
+    changeDistrict, // 🔥 추가
+    changeSort, // 🔥 추가
     resetFilters,
     refetch: fetchProducts,
   };
