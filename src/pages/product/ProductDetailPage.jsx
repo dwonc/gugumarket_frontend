@@ -490,9 +490,8 @@ const ProductDetailPage = () => {
                           if (product.status === "SOLD_OUT") {
                             alert("판매완료된 상품입니다.");
                           } else {
-                            navigate(
-                              `/purchase?productId=${product.productId}`
-                            );
+                            navigate
+                            (`/products/${product.productId}/purchase`);
                           }
                         }}
                         disabled={product.status === "SOLD_OUT"}
