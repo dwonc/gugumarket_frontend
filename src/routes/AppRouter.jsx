@@ -18,7 +18,6 @@ import PurchaseCompletePage from "../pages/transaction/PurchaseCompletePage";
 import TransactionDetailPage from "../pages/transaction/TransactionDetailPage";
 import KakaoCallbackPage from "../pages/auth/KakaoCallbackPage";
 import NotificationPage from "../pages/notification/NotificationPage";
-
 import QnaListPage from "../pages/qna/QnaListPage";
 import QnaFormPage from "../pages/qna/QnaFormPage";
 import AdminPage from "../pages/admin/AdminPage";
@@ -27,12 +26,14 @@ import ErrorPage from "../pages/ErrorPage";
 import TermsPage from "../pages/etc/TermsPage";
 import AboutPage from "../pages/etc/AboutPage";
 
+// 🗺️ 지도 페이지 추가
+import MapPage from "../pages/product/MapPage";
+
 const router = createBrowserRouter([
   // Public Routes
   {
     path: "/",
     element: <MainPage />,
-    // errorElement: <ErrorPage />,
   },
   {
     path: "/login",
@@ -43,25 +44,28 @@ const router = createBrowserRouter([
     element: <SignupPage />,
   },
   {
-    path: "/auth/kakao", // 🔥 카카오 콜백 라우트 추가
+    path: "/auth/kakao",
     element: <KakaoCallbackPage />,
   },
   {
-    path: "/find-id", // 🔥 추가
+    path: "/find-id",
     element: <FindIdPage />,
   },
   {
-    path: "/find-password", // 🔥 추가
+    path: "/find-password",
     element: <FindPasswordPage />,
   },
-
   {
     path: "/products/:id",
     element: <ProductDetailPage />,
   },
+  // 🗺️ 지도 페이지 라우트 추가
+  {
+    path: "/map",
+    element: <MapPage />,
+  },
 
   // Private Routes (로그인 필요)
-
   {
     element: <PrivateRoute />,
     children: [
@@ -108,8 +112,7 @@ const router = createBrowserRouter([
     ],
   },
 
-  //Admin Routes (관리자 전용)
-
+  // Admin Routes (관리자 전용)
   {
     element: <AdminRoute />,
     children: [
@@ -129,16 +132,14 @@ const router = createBrowserRouter([
     path: "*",
     element: <ErrorPage />,
   },
-
-    {
-        path: "/terms",
-        element: <TermsPage />,
-    },
-    {
-        path: "/about",
-        element: <AboutPage />,
-    },
-
+  {
+    path: "/terms",
+    element: <TermsPage />,
+  },
+  {
+    path: "/about",
+    element: <AboutPage />,
+  },
 ]);
 
 export default router;

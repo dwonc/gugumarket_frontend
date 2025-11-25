@@ -32,19 +32,17 @@ export const toggleProductLike = async (productId) => {
   }
 };
 
-/**
- * 상품 목록 조회 (필터링 + 정렬)
- * @param {Object} params - 쿼리 파라미터
- * @param {string} params.district - 구 이름 (예: "강남구")
- * @param {number} params.categoryId - 카테고리 ID
- * @param {string} params.keyword - 검색어
- * @param {number} params.page - 페이지 번호
- * @param {number} params.size - 페이지 크기
- * @param {string[]} params.sort - 정렬 ["필드명", "방향"] (예: ["price", "asc"])
- */
 export const getProductList = async (params = {}) => {
   try {
-    const response = await api.get("/api/products/list", { params });
+    // 🔥 sort 배열을 "필드명,방향" 문자열로 변환
+    const requestParams = { ...params };
+    if (params.sort && Array.isArray(params.sort)) {
+      requestParams.sort = `${params.sort[0]},${params.sort[1]}`;
+    }
+
+    const response = await api.get("/api/products/list", {
+      params: requestParams,
+    });
     return response.data;
   } catch (error) {
     console.error("상품 목록 조회 실패:", error);
