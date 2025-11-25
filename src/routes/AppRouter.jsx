@@ -25,9 +25,11 @@ import UserDetailPage from "../pages/admin/UserDetailPage";
 import ErrorPage from "../pages/ErrorPage";
 import TermsPage from "../pages/etc/TermsPage";
 import AboutPage from "../pages/etc/AboutPage";
-
-// 🗺️ 지도 페이지 추가
 import MapPage from "../pages/product/MapPage";
+// ⭐ 결제 페이지 추가
+import PaymentSuccessPage from "../pages/payment/PaymentSuccessPage";
+import PaymentCancelPage from "../pages/payment/PaymentCancelPage";
+import PaymentFailPage from "../pages/payment/PaymentFailPage";
 
 const router = createBrowserRouter([
   // Public Routes
@@ -59,10 +61,23 @@ const router = createBrowserRouter([
     path: "/products/:id",
     element: <ProductDetailPage />,
   },
-  // 🗺️ 지도 페이지 라우트 추가
   {
     path: "/map",
     element: <MapPage />,
+  },
+
+  // ⭐ 결제 관련 Public Routes (카카오페이 콜백 때문에)
+  {
+    path: "/payment/success",
+    element: <PaymentSuccessPage />,
+  },
+  {
+    path: "/payment/cancel",
+    element: <PaymentCancelPage />,
+  },
+  {
+    path: "/payment/fail",
+    element: <PaymentFailPage />,
   },
 
   // Private Routes (로그인 필요)
