@@ -57,6 +57,45 @@ const MyPage = () => {
   // 🆕 등급 정보 상태
   const [levelInfo, setLevelInfo] = useState(null);
 
+  useEffect(() => {
+    // ✅ 올바른 localStorage 키 사용
+    const authStorage = localStorage.getItem("auth-storage");
+    const { accessToken, isAuthenticated: storeAuth } = useAuthStore.getState();
+
+    console.log("=== 🔍 인증 상태 디버깅 ===");
+    console.log("1. isAuthenticated (컴포넌트):", isAuthenticated);
+    console.log("2. isAuthenticated (스토어):", storeAuth);
+    console.log(
+      "3. localStorage auth-storage:",
+      authStorage ? "존재함" : "없음"
+    );
+    console.log(
+      "4. Zustand accessToken:",
+      accessToken ? accessToken.substring(0, 30) + "..." : "없음"
+    );
+    console.log("5. 현재 위치:", location.pathname);
+
+    if (authStorage) {
+      try {
+        const parsed = JSON.parse(authStorage);
+        console.log(
+          "6. 저장된 토큰:",
+          parsed.state?.accessToken?.substring(0, 20) + "..."
+        );
+        console.log(
+          "7. 저장된 사용자:",
+          parsed.state?.user?.nickname || "없음"
+        );
+      } catch (e) {
+        console.error("❌ localStorage 파싱 실패:", e);
+      }
+    } else {
+      console.log("❌ auth-storage가 localStorage에 없습니다!");
+      console.log("   → 로그인이 필요합니다.");
+    }
+    console.log("========================");
+  }, [isAuthenticated, location]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -166,10 +205,9 @@ const MyPage = () => {
       class: "bg-gray-100 text-gray-700",
     };
 
-    return statusMap[key] || statusMap[statusName] || defaultStatus;
+    return statusMap[key] || defaultStatus;
   };
 
-  // 찜 해제 (mypage.html의 JS 로직 반영)
   const handleUnlike = useCallback(
     async (productId) => {
       if (!window.confirm("찜 목록에서 제거하시겠습니까?")) return;
