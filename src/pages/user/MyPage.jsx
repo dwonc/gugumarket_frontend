@@ -7,8 +7,9 @@ import Navbar from "../../components/common/Navbar";
 import Footer from "../../components/common/Footer";
 import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
-import Button from "../../components/common/Button"; // Button.jsx 사용
+import Button from "../../components/common/Button";
 import UserProfile from "../../components/user/UserProfile";
+import UserLevelBadge from "../../components/user/UserLevelBadge"; // 🆕 등급 뱃지
 
 // ✅ 분리된 탭 컴포넌트 import
 import MyPurchases from "../../components/mypages/MyPurchases";
@@ -16,46 +17,37 @@ import MySales from "../../components/mypages/MySales";
 import MyLikes from "../../components/mypages/MyLikes";
 import MyNotifications from "../../components/mypages/MyNotifications";
 
-// ✅ 백엔드 기본 URL 설정 (axios.js와 동일하게 환경 변수 사용)
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-// primary: #6B4F4F 색상을 배경색으로 사용한 SVG Data URI
 const NO_IMAGE_PLACEHOLDER =
   "data:image/svg+xml;base64," +
   btoa(
     '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">' +
-      '<rect width="100%" height="100%" fill="#6B4F4F"/>' + // primary 색상
+      '<rect width="100%" height="100%" fill="#6B4F4F"/>' +
       '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" ' +
       'font-family="sans-serif" font-size="16" fill="#FFFFFF">No Image</text>' +
       "</svg>"
   );
 
-// ✅ 이미지 경로 생성 헬퍼 함수 최종 수정: 절대 URL 중복 방지
 const getProductImageUrl = (imagePath) => {
-  // 1. 이미지가 없으면 플레이스홀더 반환
   if (!imagePath || imagePath.trim() === "") {
     return NO_IMAGE_PLACEHOLDER;
   }
 
-  // 2. 🔥 수정된 로직: 경로가 'http://' 또는 'https://'로 시작하면
-  //    이미 절대 경로이므로 그대로 반환합니다.
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
     return imagePath;
   }
 
-  // 3. (만약 서버가 상대 경로를 보낸다면) Base URL 결합 로직 유지
-  //    API_BASE_URL의 끝 슬래시를 제거 (있든 없든 제거)
   const baseUrl = API_BASE_URL.replace(/\/$/, "");
   const cleanedPath = imagePath.replace(/^\//, "");
 
-  // 4. 결합
   return `${baseUrl}/${cleanedPath}`;
 };
 
 const MyPage = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // 👈 location 사용되므로 유지
+  const location = useLocation();
   const { isAuthenticated, logout } = useAuthStore();
 
   const [data, setData] = useState(null);
@@ -63,14 +55,14 @@ const MyPage = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("purchases");
 
-  // ==========================================================
-  // ✅ 1. fetchData 정의 (TDZ/ReferenceError 해결)
-  // ==========================================================
+  // 🆕 등급 정보 상태
+  const [levelInfo, setLevelInfo] = useState(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // MypageController.java의 @GetMapping("/") 엔드포인트 호출
+      // 마이페이지 데이터
       const response = await api.get("/mypage");
       if (response.data.success) {
         setData(response.data);
@@ -79,10 +71,20 @@ const MyPage = () => {
           response.data.message || "마이페이지 정보를 불러오는데 실패했습니다."
         );
       }
+
+      // 🆕 등급 정보 불러오기
+      try {
+        const levelResponse = await api.get("/api/users/me/level");
+        if (levelResponse.data.success) {
+          setLevelInfo(levelResponse.data.levelInfo);
+        }
+      } catch (levelError) {
+        console.error("등급 정보 로드 실패:", levelError);
+        // 등급 정보 실패해도 마이페이지는 표시
+      }
     } catch (err) {
       console.error("마이페이지 데이터 로드 오류:", err);
       if (err.response?.status === 401) {
-        // 토큰 만료 등 인증 오류 시 로그아웃 처리
         logout();
         navigate("/login");
         setError("세션이 만료되었습니다. 다시 로그인해주세요.");
@@ -94,9 +96,6 @@ const MyPage = () => {
     }
   }, [logout, navigate]);
 
-  // ==========================================================
-  // ✅ 2. useEffect로 데이터 로딩 및 리디렉션 처리
-  // ==========================================================
   useEffect(() => {
     if (isAuthenticated === true) {
       fetchData();
@@ -105,7 +104,6 @@ const MyPage = () => {
     }
   }, [isAuthenticated, fetchData, navigate]);
 
-  // URL 쿼리 파라미터에서 탭 상태를 읽어옴
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get("tab");
@@ -114,17 +112,14 @@ const MyPage = () => {
     }
   }, [location.search]);
 
-  // Tab 전환 함수
   const showTab = (tabName) => {
     setActiveTab(tabName);
   };
 
-  // 금액 포맷 함수
   const formatPrice = (price) => {
     return new Intl.NumberFormat("ko-KR").format(price);
   };
 
-  // 날짜 포맷 함수
   const formatDate = (dateTimeString) => {
     if (!dateTimeString) return "N/A";
     const date = new Date(dateTimeString);
@@ -143,14 +138,11 @@ const MyPage = () => {
       .replace(" ", " ");
   };
 
-  // ✅ 트랜잭션 상태를 디자인에 맞게 변환하는 함수 (수정됨!)
   const getStatusBadge = (statusName, isSeller) => {
     const statusMap = {
-      // 구매내역 (Buyer)
       PENDING: { text: "입금 대기", class: "bg-yellow-100 text-yellow-700" },
       COMPLETED: { text: "구매 확정", class: "bg-green-100 text-green-700" },
       CANCELLED: { text: "거래 취소", class: "bg-red-100 text-red-700" },
-      // 판매내역 (Seller)
       SELLER_PENDING: {
         text: "입금 확인 대기",
         class: "bg-orange-100 text-orange-700",
@@ -168,11 +160,9 @@ const MyPage = () => {
       class: "bg-gray-100 text-gray-700",
     };
 
-    // ✅ 반환문 추가!
     return statusMap[key] || defaultStatus;
-  }; // ✅ 함수 제대로 닫기!
+  };
 
-  // 찜 해제
   const handleUnlike = useCallback(
     async (productId) => {
       if (!window.confirm("찜 목록에서 제거하시겠습니까?")) return;
@@ -216,7 +206,7 @@ const MyPage = () => {
     [data, logout, navigate]
   );
 
-  // 입금 확인 처리 함수
+  // 🆕 거래 완료 후 등급 정보 업데이트
   const confirmPayment = useCallback(
     async (transactionId) => {
       if (!window.confirm("입금을 확인하셨습니까? 거래를 완료 처리합니다."))
@@ -243,8 +233,23 @@ const MyPage = () => {
         );
 
         if (response.status === 200) {
-          alert("거래가 완료되었습니다.");
-          fetchData();
+          // 🆕 등급 정보가 있으면 표시
+          if (response.data.levelInfo) {
+            const levelInfo = response.data.levelInfo;
+            alert(
+              `🎉 거래가 완료되었습니다!\n\n` +
+                `📊 현재 등급: ${levelInfo.emoji} ${levelInfo.levelName}\n` +
+                `🔢 거래 횟수: ${levelInfo.transactionCount}회\n` +
+                (levelInfo.toNextLevel > 0
+                  ? `🎯 다음 등급까지: ${levelInfo.toNextLevel}회`
+                  : `🏆 최고 등급 달성!`)
+            );
+            setLevelInfo(levelInfo); // 등급 정보 업데이트
+          } else {
+            alert("거래가 완료되었습니다.");
+          }
+
+          fetchData(); // 데이터 새로고침
         } else {
           alert("처리 중 오류가 발생했습니다.");
         }
@@ -262,7 +267,6 @@ const MyPage = () => {
     [fetchData, logout, navigate]
   );
 
-  // 알림 읽음 처리
   const markAsRead = useCallback(
     async (notificationId) => {
       const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
@@ -308,7 +312,6 @@ const MyPage = () => {
     [logout, navigate]
   );
 
-  // 로딩 조건
   if (loading || !data || isAuthenticated === null) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -321,7 +324,6 @@ const MyPage = () => {
     );
   }
 
-  // 에러 상태
   if (error) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -337,7 +339,6 @@ const MyPage = () => {
     );
   }
 
-  // 데이터 구조 분해
   const {
     user: apiUser,
     purchases,
@@ -348,7 +349,6 @@ const MyPage = () => {
     products,
   } = data;
 
-  // 탭 정보 정의
   const tabs = [
     {
       name: "purchases",
@@ -376,15 +376,83 @@ const MyPage = () => {
     },
   ];
 
-  // 메인 렌더링
   return (
     <>
       <Navbar />
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* User Info Card */}
         <UserProfile user={apiUser} />
+
+        {/* 🆕 등급 정보 카드 */}
+        {levelInfo && (
+          <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl shadow-lg p-6 mb-6">
+            <div className="flex items-center justify-between text-white">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">내 거래 등급</h3>
+                <div className="bg-white bg-opacity-20 rounded-lg px-4 py-2 inline-block">
+                  <UserLevelBadge
+                    levelInfo={levelInfo}
+                    size="lg"
+                    showProgress={false}
+                  />
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm opacity-90 mb-1">총 거래 횟수</p>
+                <p className="text-4xl font-bold">
+                  {levelInfo.transactionCount}회
+                </p>
+                {levelInfo.toNextLevel > 0 && (
+                  <p className="text-sm mt-2 opacity-90">
+                    다음 등급까지{" "}
+                    <span className="font-bold">{levelInfo.toNextLevel}회</span>
+                  </p>
+                )}
+                {levelInfo.toNextLevel === 0 && (
+                  <p className="text-sm mt-2 font-bold">🏆 최고 등급!</p>
+                )}
+              </div>
+            </div>
+
+            {/* 등급 진행률 바 */}
+            <div className="mt-4">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex gap-2">
+                  <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded">
+                    🥚 알 (0-2회)
+                  </span>
+                  <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded">
+                    🐣 새끼새 (3-9회)
+                  </span>
+                  <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded">
+                    🐥 사춘기새 (10-29회)
+                  </span>
+                  <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded">
+                    🦅 성체인새 (30회+)
+                  </span>
+                </div>
+              </div>
+              <div className="w-full bg-white bg-opacity-20 rounded-full h-3">
+                <div
+                  className="bg-white h-3 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${
+                      levelInfo.level === "ADULT_BIRD"
+                        ? 100
+                        : ((levelInfo.transactionCount -
+                            levelInfo.minTransactions) /
+                            (levelInfo.maxTransactions -
+                              levelInfo.minTransactions +
+                              1)) *
+                          100
+                    }%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs Navigation */}
         <div className="bg-white rounded-t-2xl shadow-lg">
