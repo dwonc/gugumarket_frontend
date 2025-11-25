@@ -8,17 +8,15 @@ const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // 🔥 디버깅: 컴포넌트 마운트 시 상태 확인
   useEffect(() => {
     console.log("📊 Navbar - 인증 상태:", {
       isAuthenticated,
       user,
-      role: user?.role, // ✅ role 확인
+      role: user?.role,
       hasAccessToken: !!useAuthStore.getState().accessToken,
     });
   }, [isAuthenticated, user]);
 
-  // 알림 개수 가져오기
   useEffect(() => {
     if (isAuthenticated) {
       fetchUnreadCount();
@@ -29,13 +27,11 @@ const Navbar = () => {
 
       return () => clearInterval(interval);
     } else {
-      // ✅ 인증되지 않았으면 개수 초기화
       setUnreadCount(0);
     }
   }, [isAuthenticated]);
 
   const fetchUnreadCount = async () => {
-    // ✅ 인증 체크 추가
     if (!isAuthenticated) {
       setUnreadCount(0);
       return;
@@ -48,7 +44,6 @@ const Navbar = () => {
       }
     } catch (error) {
       console.error("알림 개수 조회 실패:", error);
-      // ✅ 401 에러 시 로그아웃 처리
       if (error.response?.status === 401) {
         console.log("인증 만료, 알림 개수 초기화");
         setUnreadCount(0);
@@ -61,7 +56,6 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  // ✅ 관리자 여부 확인
   const isAdmin = user?.role === "ADMIN";
 
   return (
@@ -75,7 +69,6 @@ const Navbar = () => {
                 <span>
                   <i className="bi bi-person-circle mr-2"></i>
                   {user?.nickname || user?.userName || "사용자"}님
-                  {/* ✅ 관리자 배지 */}
                   {isAdmin && (
                     <span className="ml-2 bg-yellow-400 text-gray-800 px-2 py-0.5 rounded-full text-xs font-bold">
                       관리자
@@ -163,6 +156,16 @@ const Navbar = () => {
               >
                 홈
               </Link>
+
+              {/* 🗺️ 지도 링크 추가 */}
+              <Link
+                to="/map"
+                className="text-gray-700 hover:text-primary font-medium transition-colors flex items-center space-x-1"
+              >
+                <i className="bi bi-map"></i>
+                <span>지도</span>
+              </Link>
+
               <Link
                 to="/mypage"
                 className="text-gray-700 hover:text-primary font-medium transition-colors"
@@ -176,7 +179,6 @@ const Navbar = () => {
                 Q&A
               </Link>
 
-              {/* ✅ 관리자 메뉴 (관리자만 표시) */}
               {isAdmin && (
                 <Link
                   to="/admin"
@@ -187,7 +189,6 @@ const Navbar = () => {
                 </Link>
               )}
 
-              {/* ✅ 상품 등록 버튼 (로그인한 사용자만) */}
               {isAuthenticated && (
                 <Link
                   to="/products/write"
