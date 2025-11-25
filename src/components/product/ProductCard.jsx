@@ -1,9 +1,7 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { toggleProductLike } from "../../api/mainApi";
+import useLikeStore from "../../stores/likeStore";
 import useAuthStore from "../../stores/authStore";
 
-// ✅ SVG Data URI 플레이스홀더
 const NO_IMAGE_PLACEHOLDER =
   "data:image/svg+xml;base64," +
   btoa(
@@ -14,10 +12,15 @@ const NO_IMAGE_PLACEHOLDER =
       "</svg>"
   );
 
-const ProductCard = ({ product, onLikeUpdate }) => {
-  const [isLiked, setIsLiked] = useState(product.isLiked || false);
-  const [isLiking, setIsLiking] = useState(false);
-  const { user, isAuthenticated } = useAuthStore();
+const ProductCard = ({ product }) => {
+  const { isAuthenticated } = useAuthStore();
+
+  // 🔥 Zustand에서 찜 상태 가져오기
+  const isLiked = useLikeStore((state) => state.isLiked(product.productId));
+  const likeCount = useLikeStore((state) =>
+    state.getLikeCount(product.productId)
+  );
+  const toggleLike = useLikeStore((state) => state.toggleLike);
 
   const handleLikeToggle = async (e) => {
     e.preventDefault();
@@ -34,25 +37,11 @@ const ProductCard = ({ product, onLikeUpdate }) => {
       return;
     }
 
-    if (isLiking) return;
-    setIsLiking(true);
-
     try {
-      const response = await toggleProductLike(product.productId);
-
-      if (response.success) {
-        setIsLiked(!isLiked);
-        if (onLikeUpdate) {
-          onLikeUpdate(product.productId, !isLiked);
-        }
-      } else {
-        alert(response.message || "오류가 발생했습니다.");
-      }
+      await toggleLike(product.productId);
     } catch (error) {
       console.error("찜하기 처리 실패:", error);
       alert("찜하기 처리 중 오류가 발생했습니다.");
-    } finally {
-      setIsLiking(false);
     }
   };
 
@@ -68,21 +57,20 @@ const ProductCard = ({ product, onLikeUpdate }) => {
             src={
               product.thumbnailImageUrl ||
               product.mainImage ||
-              NO_IMAGE_PLACEHOLDER // ✅ SVG 사용
+              NO_IMAGE_PLACEHOLDER
             }
             alt={product.productName || product.title}
             className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
             onError={(e) => {
               e.target.onerror = null;
-              e.target.src = NO_IMAGE_PLACEHOLDER; // ✅ SVG 사용
+              e.target.src = NO_IMAGE_PLACEHOLDER;
             }}
           />
         </Link>
 
         <button
           onClick={handleLikeToggle}
-          disabled={isLiking}
-          className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white transition-all duration-300 transform hover:scale-110 disabled:opacity-50"
+          className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white transition-all duration-300 transform hover:scale-110"
         >
           <i
             className={`${
@@ -114,10 +102,21 @@ const ProductCard = ({ product, onLikeUpdate }) => {
             <i className="bi bi-geo-alt"></i>
             <span>{product.sellerAddress || "위치 정보 없음"}</span>
           </span>
-          <span className="flex items-center gap-1">
-            <i className="bi bi-eye"></i>
-            <span>{product.viewCount || 0}</span>
-          </span>
+
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1">
+              <i className="bi bi-eye"></i>
+              <span>{product.viewCount || 0}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <i
+                className={`bi ${
+                  isLiked ? "bi-heart-fill text-red-500" : "bi-heart"
+                }`}
+              ></i>
+              <span>{likeCount}</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getProductList, getCategories, getDistricts } from "../api/mainApi";
+import useLikeStore from "../stores/likeStore";
 
 /**
  * 메인 페이지 상품 데이터를 관리하는 커스텀 훅
@@ -21,9 +22,12 @@ const useProducts = (initialParams = {}) => {
   const [params, setParams] = useState({
     page: 0,
     size: 12,
-    sort: ["createdDate", "desc"], // 🔥 추가: 기본 정렬 (최신순)
+    sort: ["createdDate", "desc"], // 기본 정렬 (최신순)
     ...initialParams,
   });
+
+  // 🔥 Zustand store에서 초기화 함수 가져오기
+  const initializeLikes = useLikeStore((state) => state.initializeLikes);
 
   // 🔥 카테고리 목록 가져오기
   const fetchCategories = async () => {
@@ -59,6 +63,9 @@ const useProducts = (initialParams = {}) => {
 
       if (response.success) {
         setProducts(response.content || []);
+
+        // 🔥 찜 상태 초기화 (Zustand에 저장)
+        initializeLikes(response.content || []);
 
         setPagination({
           currentPage: response.currentPage,

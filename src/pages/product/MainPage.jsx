@@ -7,8 +7,8 @@ import ErrorMessage from "../../components/common/ErrorMessage";
 import ProductCard from "../../components/product/ProductCard";
 import ProductsSearch from "../../components/product/ProductSearch.jsx";
 import ProductFilter from "../../components/product/ProductFilter";
-import DistrictFilter from "../../components/product/DistrictFilter"; // 🔥 추가
-import SortFilter from "../../components/product/SortFilter"; // 🔥 추가
+import DistrictFilter from "../../components/product/DistrictFilter";
+import SortFilter from "../../components/product/SortFilter";
 import ProductGrid from "../../components/product/ProductGrid";
 import useProducts from "../../hooks/useProducts";
 
@@ -16,7 +16,7 @@ const MainPage = () => {
   const {
     products,
     categories,
-    districts, // 🔥 추가
+    districts,
     pagination,
     loading,
     error,
@@ -24,8 +24,8 @@ const MainPage = () => {
     changePage,
     changeCategory,
     changeKeyword,
-    changeDistrict, // 🔥 추가
-    changeSort, // 🔥 추가
+    changeDistrict,
+    changeSort,
     refetch,
   } = useProducts();
 
@@ -143,11 +143,7 @@ const MainPage = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {products.map((product) => (
-                <ProductCard
-                  key={product.productId}
-                  product={product}
-                  onLikeUpdate={handleLikeUpdate}
-                />
+                <ProductCard key={product.productId} product={product} />
               ))}
             </div>
 

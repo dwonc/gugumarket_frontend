@@ -13,6 +13,17 @@ const CommentItem = ({ comment, productId, replies = [], level = 0 }) => {
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState("");
 
+  //  기본 프로필 이미지
+  const defaultProfileImage =
+    "data:image/svg+xml," +
+    encodeURIComponent(
+      '<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">' +
+        '<circle cx="50" cy="50" r="50" fill="#6B4F4F"/>' +
+        '<circle cx="50" cy="40" r="18" fill="#FFFFFF"/>' +
+        '<ellipse cx="50" cy="75" rx="25" ry="30" fill="#FFFFFF"/>' +
+        "</svg>"
+    );
+
   // ✅ mine 필드 사용!
   const isOwner = comment.mine;
 
@@ -69,14 +80,23 @@ const CommentItem = ({ comment, productId, replies = [], level = 0 }) => {
         }`}
       >
         {/* 댓글 헤더 */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
-              <i className="bi bi-person text-white text-sm"></i>
-            </div>
+            {/* 프로필 이미지 */}
+            <img
+              src={comment.profileImage || defaultProfileImage}
+              alt={`${comment.userNickname} 프로필`}
+              className={`${
+                level > 0 ? "w-8 h-8" : "w-10 h-10"
+              } rounded-full object-cover border-2 border-primary/20 shadow-md flex-shrink-0`}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = defaultProfileImage;
+              }}
+            />
+
             <div>
               <div className="flex items-center gap-2">
-                {/* ✅ userNickname 사용 */}
                 <p className="font-bold text-gray-800 text-sm">
                   {comment.userNickname}
                 </p>

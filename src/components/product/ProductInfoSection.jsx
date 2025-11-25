@@ -29,7 +29,9 @@ const ProductInfoSection = ({ product, isAdmin, reportCount }) => {
       <div className="space-y-3 py-6 border-y border-gray-200">
         <div className="flex justify-between">
           <span className="text-gray-600">카테고리</span>
-          <span className="font-medium">{product.category?.name}</span>
+          <span className="font-medium">
+            {product.categoryName || "카테고리 정보 없음"}
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">상태</span>

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import useLikeStore from "./likeStore";
 
 const useAuthStore = create(
   persist(
@@ -23,6 +24,9 @@ const useAuthStore = create(
 
       logout: () => {
         console.log("🚪 로그아웃"); // 디버깅용
+
+        useLikeStore.getState().reset();
+
         set({
           user: null,
           accessToken: null,
