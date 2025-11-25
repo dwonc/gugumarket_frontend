@@ -9,6 +9,12 @@ export const reportApi = {
   resolve: (reportId) => {
     return api.post(`/report/${reportId}/resolve`);
   },
+
+    // 🎯 내 신고 목록 조회 추가
+    getMyReports: () => {
+        return api.get("/report/my");
+    },
+
 };
 
 export default reportApi;
