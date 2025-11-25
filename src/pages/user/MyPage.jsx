@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../api/axios";
+import reportApi from "../../api/reportApi";
 import useAuthStore from "../../stores/authStore";
 import Navbar from "../../components/common/Navbar";
 import Footer from "../../components/common/Footer";
@@ -8,13 +9,13 @@ import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Button from "../../components/common/Button";
 import UserProfile from "../../components/user/UserProfile";
-import UserLevelBadge from "../../components/user/UserLevelBadge"; // 🆕 등급 뱃지
-
+import UserLevelBadge from "../../components/user/UserLevelBadge";
 // ✅ 분리된 탭 컴포넌트 import
 import MyPurchases from "../../components/mypages/MyPurchases";
 import MySales from "../../components/mypages/MySales";
 import MyLikes from "../../components/mypages/MyLikes";
 import MyNotifications from "../../components/mypages/MyNotifications";
+import MyReports from "../../components/mypages/MyReports";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -44,6 +45,10 @@ const getProductImageUrl = (imagePath) => {
   return `${baseUrl}/${cleanedPath}`;
 };
 
+const formatPrice = (price) => {
+  return price ? price.toLocaleString("ko-KR") : "0";
+};
+
 const MyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,12 +58,10 @@ const MyPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("purchases");
-
-  // 🆕 등급 정보 상태
+  const [reports, setReports] = useState([]);
   const [levelInfo, setLevelInfo] = useState(null);
 
   useEffect(() => {
-    // ✅ 올바른 localStorage 키 사용
     const authStorage = localStorage.getItem("auth-storage");
     const { accessToken, isAuthenticated: storeAuth } = useAuthStore.getState();
 
@@ -100,7 +103,6 @@ const MyPage = () => {
     setLoading(true);
     setError(null);
     try {
-      // 마이페이지 데이터
       const response = await api.get("/mypage");
       if (response.data.success) {
         setData(response.data);
@@ -110,7 +112,6 @@ const MyPage = () => {
         );
       }
 
-      // 🆕 등급 정보 불러오기
       try {
         const levelResponse = await api.get("/api/users/me/level");
         if (levelResponse.data.success) {
@@ -118,7 +119,6 @@ const MyPage = () => {
         }
       } catch (levelError) {
         console.error("등급 정보 로드 실패:", levelError);
-        // 등급 정보 실패해도 마이페이지는 표시
       }
     } catch (err) {
       console.error("마이페이지 데이터 로드 오류:", err);
@@ -132,18 +132,26 @@ const MyPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [logout, navigate]); // user와 activeTab은 fetchData 내부 로직에 직접 사용되지 않아 제거
+  }, [logout, navigate]);
+
+  const fetchReports = useCallback(async () => {
+    try {
+      const response = await reportApi.getMyReports();
+      if (response.data.success) {
+        console.log(response);
+        setReports(response.data.reports);
+      }
+    } catch (error) {
+      console.error("신고 내역 조회 실패:", error);
+    }
+  }, []);
 
   useEffect(() => {
-    // isAuthenticated가 true로 확정된 경우에만 데이터 로딩 시작
     if (isAuthenticated === true) {
       fetchData();
-    }
-    // isAuthenticated가 false로 확정된 경우에만 로그인 페이지로 리디렉션
-    else if (isAuthenticated === false) {
+    } else if (isAuthenticated === false) {
       navigate("/login");
     }
-    // (isAuthenticated가 null 또는 undefined인 초기 상태일 때는 아무것도 하지 않고 로딩 화면 유지)
   }, [isAuthenticated, fetchData, navigate]);
 
   useEffect(() => {
@@ -154,19 +162,19 @@ const MyPage = () => {
     }
   }, [location.search]);
 
+  useEffect(() => {
+    if (isAuthenticated && data?.user && data.user.role !== "ADMIN") {
+      fetchReports();
+    }
+  }, [isAuthenticated, data?.user, fetchReports]);
+
   const showTab = (tabName) => {
     setActiveTab(tabName);
-    // 스크롤 자동 조정은 필요하다면 useEffect 등에서 처리
-  };
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("ko-KR").format(price);
   };
 
   const formatDate = (dateTimeString) => {
     if (!dateTimeString) return "N/A";
     const date = new Date(dateTimeString);
-    // 'YYYY-MM-DD HH:mm' 포맷
     return date
       .toLocaleString("ko-KR", {
         year: "numeric",
@@ -185,20 +193,19 @@ const MyPage = () => {
   const getStatusBadge = (statusName, isSeller) => {
     const statusMap = {
       PENDING: { text: "입금 대기", class: "bg-yellow-100 text-yellow-700" },
-      COMPLETED: { text: "구매 확정", class: "bg-green-100 text-green-700" }, // mypage.html 구매내역
+      COMPLETED: { text: "구매 확정", class: "bg-green-100 text-green-700" },
       CANCELLED: { text: "거래 취소", class: "bg-red-100 text-red-700" },
       SELLER_PENDING: {
         text: "입금 확인 대기",
         class: "bg-orange-100 text-orange-700",
-      }, // mypage.html 판매내역
+      },
       SELLER_COMPLETED: {
         text: "판매 완료",
         class: "bg-blue-100 text-blue-700",
-      }, // mypage.html 판매내역
-      SELLING: { text: "판매 중", class: "bg-indigo-100 text-indigo-700" }, // ✅ 판매 중 상태 추가
+      },
+      SELLING: { text: "판매 중", class: "bg-indigo-100 text-indigo-700" },
     };
 
-    // MypageController의 DTO는 status.name()을 반환함.
     const key = isSeller ? `SELLER_${statusName}` : statusName;
     const defaultStatus = {
       text: statusName,
@@ -212,29 +219,25 @@ const MyPage = () => {
     async (productId) => {
       if (!window.confirm("찜 목록에서 제거하시겠습니까?")) return;
 
-      // ✅ CSRF 토큰 가져오기 및 헤더 설정
       const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
       const csrfHeader = document.querySelector(
         'meta[name="_csrf_header"]'
       )?.content;
 
       const headers = {
-        // Content-Type은 axios.js에 기본 설정되어 있지만, 명시적으로 추가
         "Content-Type": "application/json",
       };
 
       if (csrfToken && csrfHeader) {
-        headers[csrfHeader] = csrfToken; // 스프링 시큐리티용 CSRF 헤더 추가
+        headers[csrfHeader] = csrfToken;
       }
 
       try {
-        // LikeController의 실제 경로: /api/products/{productId}/like
         const res = await api.post(`/api/products/${productId}/like`, null, {
           headers: headers,
         });
 
         if (res.status === 200) {
-          // UI에서 즉시 제거
           const updatedLikes = data.likes.filter(
             (like) => like.productId !== productId
           );
@@ -243,7 +246,6 @@ const MyPage = () => {
         }
       } catch (err) {
         console.error("찜 해제 오류:", err);
-        // 401 에러 처리 (Axios Interceptor에서 1차 처리 후, 최종 실패 시)
         if (err.response?.status === 401) {
           alert("세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.");
           logout();
@@ -254,15 +256,13 @@ const MyPage = () => {
       }
     },
     [data, logout, navigate]
-  ); // ✅ 의존성 추가: data, logout, navigate
+  );
 
-  // 🆕 거래 완료 후 등급 정보 업데이트
   const confirmPayment = useCallback(
     async (transactionId) => {
       if (!window.confirm("입금을 확인하셨습니까? 거래를 완료 처리합니다."))
         return;
 
-      // ✅ CSRF 토큰 가져오기 (POST 요청이므로 추가)
       const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
       const csrfHeader = document.querySelector(
         'meta[name="_csrf_header"]'
@@ -277,7 +277,6 @@ const MyPage = () => {
       }
 
       try {
-        // TransactionController의 실제 경로: /api/transactions/{transactionId}/complete
         const response = await api.post(
           `/api/transactions/${transactionId}/complete`,
           null,
@@ -285,7 +284,6 @@ const MyPage = () => {
         );
 
         if (response.status === 200) {
-          // 🆕 등급 정보가 있으면 표시
           if (response.data.levelInfo) {
             const levelInfo = response.data.levelInfo;
             alert(
@@ -296,18 +294,17 @@ const MyPage = () => {
                   ? `🎯 다음 등급까지: ${levelInfo.toNextLevel}회`
                   : `🏆 최고 등급 달성!`)
             );
-            setLevelInfo(levelInfo); // 등급 정보 업데이트
+            setLevelInfo(levelInfo);
           } else {
             alert("거래가 완료되었습니다.");
           }
 
-          fetchData(); // 데이터 새로고침
+          fetchData();
         } else {
           alert("처리 중 오류가 발생했습니다.");
         }
       } catch (error) {
         console.error("입금 확인 오류:", error);
-        // 401 에러 처리
         if (error.response?.status === 401) {
           alert("세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.");
           logout();
@@ -318,11 +315,10 @@ const MyPage = () => {
       }
     },
     [fetchData, logout, navigate]
-  ); // ✅ 의존성 추가: fetchData, logout, navigate
+  );
 
   const markAsRead = useCallback(
     async (notificationId) => {
-      // ✅ CSRF 토큰 가져오기 (POST 요청이므로 추가)
       const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
       const csrfHeader = document.querySelector(
         'meta[name="_csrf_header"]'
@@ -337,12 +333,9 @@ const MyPage = () => {
       }
 
       try {
-        // NotificationController의 실제 경로: /api/notifications/{notificationId}/read
-        // PATCH 요청 사용
         await api.patch(`/api/notifications/${notificationId}/read`, null, {
           headers: headers,
         });
-        // UI 업데이트
         setData((prevData) => {
           const updatedNotifications = prevData.recentNotifications.map(
             (notif) =>
@@ -375,21 +368,6 @@ const MyPage = () => {
         <Navbar />
         <main className="flex-grow flex items-center justify-center">
           <Loading size="lg" text="마이페이지 정보를 불러오는 중..." />
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <ErrorMessage message={error} type="error" />
-          <Button onClick={fetchData} className="mt-4">
-            다시 시도
-          </Button>
         </main>
         <Footer />
       </div>
@@ -431,7 +409,19 @@ const MyPage = () => {
       icon: "bi-bell",
       count: unreadCount,
     },
+    // USER 전용 신고 내역 탭 (Admin 제외)
+    ...(apiUser?.role !== "ADMIN"
+      ? [
+          {
+            name: "reports",
+            label: "신고 내역",
+            icon: "bi-flag",
+            count: reports?.length,
+          },
+        ]
+      : []),
   ];
+
   return (
     <>
       <Navbar />
@@ -440,7 +430,7 @@ const MyPage = () => {
         {/* User Info Card */}
         <UserProfile user={apiUser} />
 
-        {/* 🆕 등급 정보 카드 */}
+        {/* 등급 정보 카드 */}
         {levelInfo && (
           <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl shadow-lg p-6 mb-6">
             <div className="flex items-center justify-between text-white">
@@ -537,7 +527,6 @@ const MyPage = () => {
                     {tab.count}
                   </span>
                 )}
-                {/* 판매내역 탭의 총 개수 표시 (optional) */}
                 {tab.name === "sales" && (
                   <span className="ml-1 text-sm text-gray-500 font-normal">
                     ({tab.count || 0})
@@ -566,7 +555,6 @@ const MyPage = () => {
               apiUser={apiUser}
               formatPrice={formatPrice}
               formatDate={formatDate}
-              formDate={formatDate}
               getStatusBadge={getStatusBadge}
               getProductImageUrl={getProductImageUrl}
               confirmPayment={confirmPayment}
@@ -586,7 +574,14 @@ const MyPage = () => {
             <MyNotifications
               recentNotifications={recentNotifications}
               formatDate={formatDate}
-              marksAsRead={markAsRead}
+              markAsRead={markAsRead}
+            />
+          )}
+          {activeTab === "reports" && apiUser?.role !== "ADMIN" && (
+            <MyReports
+              reports={reports}
+              formatDate={formatDate}
+              navigate={navigate}
             />
           )}
         </div>

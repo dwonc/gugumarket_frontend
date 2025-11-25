@@ -20,9 +20,12 @@ import ProductImageGallery from "../../components/product/ProductImageGallery";
 import ProductInfoSection from "../../components/product/ProductInfoSection";
 import ProductActionSection from "../../components/product/ProductActionSection";
 import ProductDescription from "../../components/product/ProductDescription";
+
 import ShareModal from "../../components/product/ShareModal";
 import ProductMetaTags from "../../components/product/ProductMetaTags";
 import UserLevelBadge from "../../components/user/UserLevelBadge";
+// 🎯 신고 Modal import 추가
+import ReportModal from "../../components/report/ReportModal";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -46,8 +49,10 @@ const ProductDetailPage = () => {
   );
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [reportCount, setReportCount] = useState(0); // ✅ 신고 수 상태 추가
+  const [reportCount, setReportCount] = useState(0);
   const [sellerLevelInfo, setSellerLevelInfo] = useState(null);
+  // 🎯 신고 Modal state 추가
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // 🔥 판매자 등급 정보 로드 (useCallback으로 메모이제이션)
   const loadSellerLevel = useCallback(async (sellerId) => {
@@ -73,7 +78,7 @@ const ProductDetailPage = () => {
             console.log("✅ 서버에서 받은 mainImage:", productData.mainImage);
             // ✅ 신고 수 설정
             setReportCount(data.reportCount || 0);
-            // 판매자 등급 정보 불러오기
+            // 🔥 판매자 등급 정보 불러오기
             if (productData.sellerId) {
               loadSellerLevel(productData.sellerId);
             }
@@ -85,6 +90,7 @@ const ProductDetailPage = () => {
     }
   }, [id, fetchProduct, loadSellerLevel]);
 
+  // 상태 변경 핸들러
   const handleStatusSave = async (selectedStatus) => {
     try {
       const result = await updateProductStatus(
@@ -100,6 +106,7 @@ const ProductDetailPage = () => {
     }
   };
 
+  // 상품 삭제 핸들러
   const handleDelete = async () => {
     try {
       await deleteProduct(product.productId);
@@ -114,31 +121,24 @@ const ProductDetailPage = () => {
     }
   };
 
+  // 공유하기 핸들러
   const handleShare = () => {
     setIsShareModalOpen(true);
   };
 
-  // ✅ 신고하기 핸들러 추가
-  const handleReport = async () => {
+  // 🎯 신고하기 핸들러 (ReportModal 사용)
+  const handleReport = () => {
     if (!isAuthenticated) {
       alert("로그인이 필요합니다.");
       navigate("/login");
       return;
     }
+    setIsReportModalOpen(true);
+  };
 
-    if (!confirm("이 게시물을 신고하시겠습니까?")) {
-      return;
-    }
-
-    try {
-      await reportApi.create(product.productId, "부적절한 게시물");
-      alert("신고가 접수되었습니다.");
-      // ✅ 신고 후 상품 정보 다시 불러와서 reportCount 업데이트
-      fetchProduct(id);
-    } catch (err) {
-      console.error("신고 실패:", err);
-      alert(err.response?.data?.message || "신고 접수 중 오류가 발생했습니다.");
-    }
+  // 🎯 신고 성공 후 핸들러
+  const handleReportSuccess = () => {
+    fetchProduct(id);
   };
 
   // 로딩 중
@@ -150,6 +150,7 @@ const ProductDetailPage = () => {
     );
   }
 
+  // 에러 발생
   if (productStore.error) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -165,6 +166,7 @@ const ProductDetailPage = () => {
     );
   }
 
+  // 상품 없음
   if (!product) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -186,13 +188,16 @@ const ProductDetailPage = () => {
       <Navbar />
       <ProductBreadcrumb product={product} />
 
+      {/* Product Detail */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left: Product Images */}
           <ProductImageGallery product={product} />
 
+          {/* Right: Product Info */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-lg p-8">
-              {/* 판매자 정보 + 등급 */}
+              {/* 🔥 판매자 정보 + 등급 */}
               <div className="mb-6 pb-6 border-b">
                 <div className="flex items-center justify-between">
                   <div>
@@ -207,9 +212,12 @@ const ProductDetailPage = () => {
                 </div>
               </div>
 
-              <ProductInfoSection product={product} />
+              <ProductInfoSection
+                product={product}
+                isAdmin={isAdmin}
+                reportCount={reportCount}
+              />
 
-              {/* ✅ onReport props 전달 */}
               <ProductActionSection
                 product={product}
                 canEdit={canEdit}
@@ -233,6 +241,14 @@ const ProductDetailPage = () => {
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         product={product}
+      />
+
+      {/* 🎯 신고 Modal 추가 */}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        productId={product.productId}
+        onSuccess={handleReportSuccess}
       />
 
       <Footer />
