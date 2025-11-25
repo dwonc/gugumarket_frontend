@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProductStore } from "../../stores/productStore";
 import useAuth from "../../hooks/useAuth";
 import useProductPermission from "../../hooks/useProductPermission";
 import reportApi from "../../api/reportApi";
+import api from "../../api/axios";
 
 // 공통 컴포넌트
 import Navbar from "../../components/common/Navbar";
@@ -19,8 +20,9 @@ import ProductImageGallery from "../../components/product/ProductImageGallery";
 import ProductInfoSection from "../../components/product/ProductInfoSection";
 import ProductActionSection from "../../components/product/ProductActionSection";
 import ProductDescription from "../../components/product/ProductDescription";
-import ShareModal from "@/components/product/ShareModal.jsx";
-import ProductMetaTags from "@/components/product/ProductMetaTags.jsx";
+import ShareModal from "../../components/product/ShareModal";
+import ProductMetaTags from "../../components/product/ProductMetaTags";
+import UserLevelBadge from "../../components/user/UserLevelBadge";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -37,7 +39,6 @@ const ProductDetailPage = () => {
     deleteProduct,
   } = productStore;
 
-  // 권한 체크 (커스텀 훅 사용)
   const { isSeller, isAdmin, canEdit } = useProductPermission(
     isAuthenticated,
     user,
@@ -46,6 +47,19 @@ const ProductDetailPage = () => {
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportCount, setReportCount] = useState(0); // ✅ 신고 수 상태 추가
+  const [sellerLevelInfo, setSellerLevelInfo] = useState(null);
+
+  // 🔥 판매자 등급 정보 로드 (useCallback으로 메모이제이션)
+  const loadSellerLevel = useCallback(async (sellerId) => {
+    try {
+      const response = await api.get(`/api/users/${sellerId}/level`);
+      if (response.data.success) {
+        setSellerLevelInfo(response.data.levelInfo);
+      }
+    } catch (error) {
+      console.error("판매자 등급 정보 로드 실패:", error);
+    }
+  }, []);
 
   // 상품 정보 불러오기
   useEffect(() => {
@@ -59,15 +73,18 @@ const ProductDetailPage = () => {
             console.log("✅ 서버에서 받은 mainImage:", productData.mainImage);
             // ✅ 신고 수 설정
             setReportCount(data.reportCount || 0);
+            // 판매자 등급 정보 불러오기
+            if (productData.sellerId) {
+              loadSellerLevel(productData.sellerId);
+            }
           }
         })
         .catch((err) => {
           console.error("상품 로딩 실패:", err);
         });
     }
-  }, [id, fetchProduct]);
+  }, [id, fetchProduct, loadSellerLevel]);
 
-  // 상태 변경 핸들러
   const handleStatusSave = async (selectedStatus) => {
     try {
       const result = await updateProductStatus(
@@ -83,7 +100,6 @@ const ProductDetailPage = () => {
     }
   };
 
-  // 상품 삭제 핸들러
   const handleDelete = async () => {
     try {
       await deleteProduct(product.productId);
@@ -98,7 +114,6 @@ const ProductDetailPage = () => {
     }
   };
 
-  // 공유하기 핸들러
   const handleShare = () => {
     setIsShareModalOpen(true);
   };
@@ -135,7 +150,6 @@ const ProductDetailPage = () => {
     );
   }
 
-  // 에러 발생
   if (productStore.error) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -151,7 +165,6 @@ const ProductDetailPage = () => {
     );
   }
 
-  // 상품 없음
   if (!product) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -173,21 +186,28 @@ const ProductDetailPage = () => {
       <Navbar />
       <ProductBreadcrumb product={product} />
 
-      {/* Product Detail */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left: Product Images */}
           <ProductImageGallery product={product} />
 
-          {/* Right: Product Info */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-lg p-8">
-              {/* ✅ isAdmin과 reportCount props 전달 */}
-              <ProductInfoSection
-                product={product}
-                isAdmin={isAdmin}
-                reportCount={reportCount}
-              />
+              {/* 판매자 정보 + 등급 */}
+              <div className="mb-6 pb-6 border-b">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">판매자</p>
+                    <p className="text-lg font-bold text-gray-800">
+                      {product.sellerNickname || product.sellerName || "판매자"}
+                    </p>
+                  </div>
+                  {sellerLevelInfo && (
+                    <UserLevelBadge levelInfo={sellerLevelInfo} size="md" />
+                  )}
+                </div>
+              </div>
+
+              <ProductInfoSection product={product} />
 
               {/* ✅ onReport props 전달 */}
               <ProductActionSection
