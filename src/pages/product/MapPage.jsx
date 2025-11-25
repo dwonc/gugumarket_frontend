@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/common/Navbar";
 import Footer from "../../components/common/Footer";
-import axios from "axios";
+import axios from "../../api/axios";
 
 const MapPage = () => {
   const navigate = useNavigate();
