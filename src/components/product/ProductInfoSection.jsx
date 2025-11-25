@@ -9,7 +9,7 @@ const ProductInfoSection = ({ product, isAdmin, reportCount }) => {
       <h1 className="text-3xl font-bold text-gray-800 mb-4">{product.title}</h1>
 
       {/* ✅ Admin 전용 신고 배지 */}
-      {isAdmin && reportCount > 0 && (
+      {reportCount > 0 && (
         <div className="mb-4 p-3 bg-red-50 border-2 border-red-200 rounded-lg flex items-center gap-2">
           <i className="bi bi-exclamation-triangle-fill text-red-600 text-xl"></i>
           <span className="text-red-700 font-bold">
