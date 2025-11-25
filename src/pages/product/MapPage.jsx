@@ -1,3 +1,4 @@
+// pages/MapPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/common/Navbar";
@@ -11,18 +12,23 @@ const MapPage = () => {
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [hoveredProduct, setHoveredProduct] = useState(null); // 🆕 호버 상태
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const [radiusFilter, setRadiusFilter] = useState(null);
+  const [priceFilter, setPriceFilter] = useState(null); // 🆕 가격 필터
 
-  // 상품 목록 가져오기
+  // 🆕 상품 목록 가져오기 (가격 필터 포함)
   const loadProducts = async () => {
     try {
-      console.log("🔄 상품 로딩 시작...");
-      const response = await axios.get(
-        "http://localhost:8080/api/products/map"
-      );
+      console.log("🔄 상품 로딩 시작... (가격필터:", priceFilter, ")");
 
+      let url = "http://localhost:8080/api/products/map";
+      if (priceFilter) {
+        url += `?maxPrice=${priceFilter}`;
+      }
+
+      const response = await axios.get(url);
       console.log("📦 API 응답:", response.data);
 
       if (response.data.success) {
@@ -32,7 +38,6 @@ const MapPage = () => {
           (p) => p.latitude != null && p.longitude != null
         );
         console.log("📍 좌표 있는 상품:", withCoords.length, "개");
-        console.log("📍 상품 데이터:", withCoords);
 
         setProducts(response.data.products);
         setFilteredProducts(response.data.products);
@@ -86,6 +91,16 @@ const MapPage = () => {
     setFilteredProducts(filtered);
   };
 
+  // 🆕 가격 필터 적용
+  const applyPriceFilter = (maxPrice) => {
+    setPriceFilter(maxPrice);
+  };
+
+  // 🆕 가격 필터 변경 시 상품 재조회
+  useEffect(() => {
+    loadProducts();
+  }, [priceFilter]);
+
   // 현재 위치 가져오기
   const getUserLocation = () => {
     if (!navigator.geolocation) {
@@ -122,7 +137,6 @@ const MapPage = () => {
       },
       (error) => {
         console.error("❌ 위치 가져오기 실패:", error);
-
         let errorMessage = "";
         switch (error.code) {
           case error.PERMISSION_DENIED:
@@ -138,7 +152,6 @@ const MapPage = () => {
           default:
             errorMessage = "알 수 없는 오류가 발생했습니다.";
         }
-
         alert(errorMessage);
       },
       {
@@ -205,7 +218,7 @@ const MapPage = () => {
     }
   }, []);
 
-  // 🔥 마커 생성 함수 (useCallback으로 메모이제이션)
+  // 🔥 알 마커 생성 함수
   const createMarkers = useCallback(() => {
     if (!map || filteredProducts.length === 0) {
       console.log("⚠️ 마커 표시 조건 미충족", {
@@ -215,7 +228,7 @@ const MapPage = () => {
       return;
     }
 
-    console.log("🎯 마커 생성 시작!", filteredProducts.length, "개");
+    console.log("🥚 알 마커 생성 시작!", filteredProducts.length, "개");
 
     // 기존 마커 제거
     markers.forEach((marker) => {
@@ -230,7 +243,7 @@ const MapPage = () => {
     filteredProducts.forEach((product, index) => {
       if (product.latitude && product.longitude) {
         console.log(
-          `✅ 마커 생성 #${index + 1}:`,
+          `🥚 알 마커 생성 #${index + 1}:`,
           product.productName,
           product.latitude,
           product.longitude
@@ -241,21 +254,50 @@ const MapPage = () => {
           product.longitude
         );
 
+        // 🥚 알 마커 HTML
         const markerContent = document.createElement("div");
-        markerContent.className = "custom-marker";
+        markerContent.className = "egg-marker";
         markerContent.innerHTML = `
           <div style="
-            background: #FF6B6B;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             cursor: pointer;
-            white-space: nowrap;
           ">
-            ${(product.price / 10000).toFixed(0)}만원
+            <img 
+              src="${
+                hoveredProduct?.productId === product.productId
+                  ? "/images/egg-cracked.png"
+                  : "/images/egg-normal.png"
+              }" 
+              alt="egg" 
+              style="
+                width: 50px;
+                height: 50px;
+                object-fit: contain;
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+                transition: transform 0.3s ease;
+                transform: ${
+                  hoveredProduct?.productId === product.productId
+                    ? "scale(1.2)"
+                    : "scale(1)"
+                };
+              "
+            />
+            <div style="
+              background: #FF6B6B;
+              color: white;
+              padding: 4px 8px;
+              border-radius: 12px;
+              font-weight: bold;
+              font-size: 12px;
+              margin-top: -5px;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+              white-space: nowrap;
+            ">
+              ${(product.price / 10000).toFixed(0)}만원
+            </div>
           </div>
         `;
 
@@ -267,8 +309,23 @@ const MapPage = () => {
 
         customOverlay.setMap(map);
 
+        // 🆕 마우스 호버 이벤트
+        markerContent.addEventListener("mouseenter", () => {
+          console.log("🐣 알에 마우스 올림:", product.productName);
+          setHoveredProduct(product);
+        });
+
+        markerContent.addEventListener("mouseleave", () => {
+          console.log("🥚 알에서 마우스 뗌");
+          // 약간의 딜레이를 줘서 미리보기 카드로 마우스 이동 가능하게
+          setTimeout(() => {
+            setHoveredProduct(null);
+          }, 200);
+        });
+
+        // 클릭 시 상세 모달
         markerContent.addEventListener("click", () => {
-          console.log("🖱️ 마커 클릭:", product.productName);
+          console.log("🖱️ 알 클릭:", product.productName);
           setSelectedProduct(product);
           map.setCenter(position);
           map.setLevel(4);
@@ -280,13 +337,13 @@ const MapPage = () => {
     });
 
     setMarkers(newMarkers);
-    console.log("🗺️ 마커 생성 완료:", newMarkers.length, "개");
+    console.log("🗺️ 알 마커 생성 완료:", newMarkers.length, "개");
 
     if (newMarkers.length > 0 && !radiusFilter) {
       map.setBounds(bounds);
       console.log("🗺️ 지도 범위 조정 완료");
     }
-  }, [map, filteredProducts, radiusFilter]);
+  }, [map, filteredProducts, radiusFilter, hoveredProduct]);
 
   // 마커 생성 트리거
   useEffect(() => {
@@ -308,72 +365,142 @@ const MapPage = () => {
           style={{ minHeight: "calc(100vh - 200px)" }}
         ></div>
 
-        {/* 반경 필터 버튼 */}
+        {/* 왼쪽 필터 패널 */}
         <div className="absolute top-4 left-4 bg-white rounded-2xl shadow-xl p-4 z-20">
-          <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center">
-            <i className="bi bi-geo-alt-fill text-primary mr-2"></i>
-            반경 필터
-          </h3>
-          <div className="flex flex-col space-y-2">
-            <button
-              onClick={() => applyRadiusFilter(null)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                radiusFilter === null
-                  ? "bg-primary text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              전체
-            </button>
-            <button
-              onClick={() => applyRadiusFilter(1)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                radiusFilter === 1
-                  ? "bg-primary text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              1km
-            </button>
-            <button
-              onClick={() => applyRadiusFilter(5)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                radiusFilter === 5
-                  ? "bg-primary text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              5km
-            </button>
-            <button
-              onClick={() => applyRadiusFilter(10)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                radiusFilter === 10
-                  ? "bg-primary text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              10km
-            </button>
-            <button
-              onClick={getUserLocation}
-              className="px-4 py-2 rounded-lg font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all flex items-center justify-center space-x-1"
-            >
-              <i className="bi bi-crosshair"></i>
-              <span>내 위치</span>
-            </button>
+          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <span className="text-2xl mr-2">🥚</span>
+            GUGU Market
+          </h2>
 
-            <div className="mt-4 pt-4 border-t border-gray-200">
+          {/* 반경 필터 */}
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center">
+              <i className="bi bi-geo-alt-fill text-primary mr-2"></i>
+              반경 필터
+            </h3>
+            <div className="flex flex-col space-y-2">
               <button
-                onClick={updateAllCoordinates}
-                className="w-full px-4 py-2 rounded-lg font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm"
+                onClick={() => applyRadiusFilter(null)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  radiusFilter === null
+                    ? "bg-primary text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
               >
-                🔄 좌표 업데이트
+                전체
+              </button>
+              <button
+                onClick={() => applyRadiusFilter(1)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  radiusFilter === 1
+                    ? "bg-primary text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                1km
+              </button>
+              <button
+                onClick={() => applyRadiusFilter(5)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  radiusFilter === 5
+                    ? "bg-primary text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                5km
+              </button>
+              <button
+                onClick={() => applyRadiusFilter(10)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  radiusFilter === 10
+                    ? "bg-primary text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                10km
               </button>
             </div>
           </div>
+
+          {/* 🆕 가격 필터 */}
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center">
+              <i className="bi bi-cash-coin text-yellow-500 mr-2"></i>
+              가격 필터
+            </h3>
+            <div className="flex flex-col space-y-2">
+              <button
+                onClick={() => applyPriceFilter(null)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  priceFilter === null
+                    ? "bg-yellow-500 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                전체
+              </button>
+              <button
+                onClick={() => applyPriceFilter(10000)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  priceFilter === 10000
+                    ? "bg-yellow-500 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                1만원 이하
+              </button>
+              <button
+                onClick={() => applyPriceFilter(30000)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  priceFilter === 30000
+                    ? "bg-yellow-500 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                3만원 이하
+              </button>
+              <button
+                onClick={() => applyPriceFilter(50000)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  priceFilter === 50000
+                    ? "bg-yellow-500 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                5만원 이하
+              </button>
+              <button
+                onClick={() => applyPriceFilter(100000)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  priceFilter === 100000
+                    ? "bg-yellow-500 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                10만원 이하
+              </button>
+            </div>
+          </div>
+
+          {/* 내 위치 버튼 */}
+          <button
+            onClick={getUserLocation}
+            className="w-full px-4 py-2 rounded-lg font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all flex items-center justify-center space-x-1 mb-3"
+          >
+            <i className="bi bi-crosshair"></i>
+            <span>내 위치</span>
+          </button>
+
+          {/* 좌표 업데이트 버튼 */}
+          <button
+            onClick={updateAllCoordinates}
+            className="w-full px-4 py-2 rounded-lg font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all text-sm"
+          >
+            🔄 좌표 업데이트
+          </button>
         </div>
 
+        {/* 로딩 */}
         {loading && (
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white px-6 py-3 rounded-full shadow-lg z-20">
             <div className="flex items-center space-x-2">
@@ -385,22 +512,78 @@ const MapPage = () => {
           </div>
         )}
 
+        {/* 🆕 호버 시 미리보기 카드 */}
+        {hoveredProduct && (
+          <div
+            className="absolute z-30 pointer-events-none"
+            style={{
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+            }}
+            onMouseEnter={() => setHoveredProduct(hoveredProduct)}
+            onMouseLeave={() => setHoveredProduct(null)}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl overflow-hidden w-72 pointer-events-auto animate-fadeIn"
+              onClick={() => handleProductClick(hoveredProduct.productId)}
+            >
+              {/* 상품 이미지 */}
+              <div
+                className="h-40 bg-cover bg-center cursor-pointer"
+                style={{
+                  backgroundImage: `url(${
+                    hoveredProduct.thumbnailImageUrl || "/images/no-image.png"
+                  })`,
+                }}
+              ></div>
+
+              {/* 상품 정보 */}
+              <div className="p-4">
+                <h3 className="text-base font-bold text-gray-800 mb-2 line-clamp-2 cursor-pointer hover:text-primary">
+                  {hoveredProduct.productName}
+                </h3>
+
+                <p className="text-xl font-bold text-primary mb-2">
+                  {hoveredProduct.price?.toLocaleString()}원
+                </p>
+
+                <div className="flex items-center text-sm text-gray-600 mb-2">
+                  <i className="bi bi-geo-alt mr-1"></i>
+                  <span className="line-clamp-1">
+                    {hoveredProduct.sellerAddress || "위치 정보 없음"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <span>
+                    <i className="bi bi-eye mr-1"></i>
+                    조회 {hoveredProduct.viewCount || 0}
+                  </span>
+                  <span>
+                    <i className="bi bi-heart mr-1"></i>찜{" "}
+                    {hoveredProduct.likeCount || 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 클릭 시 상세 모달 */}
         {selectedProduct && (
           <>
-            {/* 투명 배경 - 클릭 시 모달 닫기 */}
             <div
               className="fixed inset-0 z-40"
               onClick={() => setSelectedProduct(null)}
             ></div>
 
-            {/* 🔥 모달 - 화면 정중앙 하단 (수정) */}
             <div className="fixed left-1/2 bottom-8 transform -translate-x-1/2 z-50 w-11/12 max-w-md">
               <div
                 className="bg-white rounded-2xl shadow-2xl overflow-hidden animate-slideUp"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="relative">
-                  {/* 닫기 버튼 */}
                   <button
                     onClick={() => setSelectedProduct(null)}
                     className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10"
@@ -408,7 +591,6 @@ const MapPage = () => {
                     <i className="bi bi-x-lg text-gray-700"></i>
                   </button>
 
-                  {/* 상품 이미지 */}
                   <div
                     className="h-48 bg-cover bg-center cursor-pointer"
                     style={{
@@ -422,7 +604,6 @@ const MapPage = () => {
                     }
                   ></div>
 
-                  {/* 상품 정보 */}
                   <div className="p-4">
                     <h3
                       className="text-xl font-bold text-gray-800 mb-2 cursor-pointer hover:text-primary line-clamp-2"
@@ -470,6 +651,7 @@ const MapPage = () => {
           </>
         )}
 
+        {/* 상품 개수 표시 */}
         <div className="absolute top-4 right-4 bg-white px-4 py-2 rounded-full shadow-lg z-20">
           <span className="text-gray-700 font-medium">
             <i className="bi bi-pin-map-fill text-primary mr-2"></i>
@@ -494,6 +676,20 @@ const MapPage = () => {
         }
         .animate-slideUp {
           animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
         }
       `}</style>
     </div>
