@@ -423,13 +423,13 @@ const MyPage = () => {
                     🥚 알 (0-2회)
                   </span>
                   <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded">
-                    🐣 새끼새 (3-9회)
+                    🐣 아기새 (3-9회)
                   </span>
                   <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded">
                     🐥 사춘기새 (10-29회)
                   </span>
                   <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded">
-                    🦅 성체인새 (30회+)
+                    🦅 어른새 (30회+)
                   </span>
                 </div>
               </div>
