@@ -2,11 +2,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import useAuthStore from "../../stores/authStore";
 import { notificationApi } from "../../api/notificationApi";
+import chatApi from "../../api/chatApi"; // ✅ 추가!
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const [unreadCount, setUnreadCount] = useState(0);
+
+  // ✅ 알림과 채팅 unreadCount 분리
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   useEffect(() => {
     console.log("📊 Navbar - 인증 상태:", {
@@ -19,34 +23,63 @@ const Navbar = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchUnreadCount();
+      // ✅ 알림 개수 조회
+      fetchNotificationUnreadCount();
 
+      // ✅ 채팅 읽지 않은 메시지 개수 조회
+      fetchChatUnreadCount();
+
+      // ✅ 30초마다 갱신
       const interval = setInterval(() => {
-        fetchUnreadCount();
+        fetchNotificationUnreadCount();
+        fetchChatUnreadCount();
       }, 30000);
 
       return () => clearInterval(interval);
     } else {
-      setUnreadCount(0);
+      setNotificationUnreadCount(0);
+      setChatUnreadCount(0);
     }
   }, [isAuthenticated]);
 
-  const fetchUnreadCount = async () => {
+  // ✅ 알림 읽지 않은 개수 조회
+  const fetchNotificationUnreadCount = async () => {
     if (!isAuthenticated) {
-      setUnreadCount(0);
+      setNotificationUnreadCount(0);
       return;
     }
 
     try {
       const response = await notificationApi.getUnreadCount();
       if (response.data.success) {
-        setUnreadCount(response.data.data.count);
+        setNotificationUnreadCount(response.data.data.count);
       }
     } catch (error) {
       console.error("알림 개수 조회 실패:", error);
       if (error.response?.status === 401) {
         console.log("인증 만료, 알림 개수 초기화");
-        setUnreadCount(0);
+        setNotificationUnreadCount(0);
+      }
+    }
+  };
+
+  // ✅ 채팅 읽지 않은 메시지 개수 조회
+  const fetchChatUnreadCount = async () => {
+    if (!isAuthenticated) {
+      setChatUnreadCount(0);
+      return;
+    }
+
+    try {
+      const response = await chatApi.getTotalUnreadCount();
+      if (response.success) {
+        setChatUnreadCount(response.unreadCount);
+      }
+    } catch (error) {
+      console.error("채팅 읽지 않은 메시지 개수 조회 실패:", error);
+      if (error.response?.status === 401) {
+        console.log("인증 만료, 채팅 개수 초기화");
+        setChatUnreadCount(0);
       }
     }
   };
@@ -86,15 +119,18 @@ const Navbar = () => {
             <div className="flex items-center space-x-6">
               {isAuthenticated ? (
                 <>
+                  {/* ✅ 알림 - notificationUnreadCount 사용 */}
                   <Link
                     to="/notifications"
                     className="relative hover:underline flex items-center"
                   >
                     <div className="relative mr-1">
                       <i className="bi bi-bell text-lg"></i>
-                      {unreadCount > 0 && (
+                      {notificationUnreadCount > 0 && (
                         <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold">
-                          {unreadCount > 99 ? "99+" : unreadCount}
+                          {notificationUnreadCount > 99
+                            ? "99+"
+                            : notificationUnreadCount}
                         </span>
                       )}
                     </div>
@@ -157,7 +193,7 @@ const Navbar = () => {
                 홈
               </Link>
 
-              {/* 🗺️ 지도 링크 추가 */}
+              {/* 🗺️ 지도 링크 */}
               <Link
                 to="/map"
                 className="text-gray-700 hover:text-primary font-medium transition-colors flex items-center space-x-1"
@@ -172,6 +208,23 @@ const Navbar = () => {
               >
                 마이페이지
               </Link>
+
+              {/* ✅ 채팅 링크 - chatUnreadCount 사용 */}
+              <Link
+                to="/chat"
+                className="relative text-gray-700 hover:text-primary font-medium transition-colors flex items-center space-x-1"
+              >
+                <div className="relative">
+                  <i className="bi bi-chat-dots text-lg"></i>
+                  {chatUnreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold">
+                      {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                    </span>
+                  )}
+                </div>
+                <span>채팅</span>
+              </Link>
+
               <Link
                 to="/qna"
                 className="text-gray-700 hover:text-primary font-medium transition-colors"

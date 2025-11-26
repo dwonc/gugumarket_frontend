@@ -26,6 +26,7 @@ import ProductMetaTags from "../../components/product/ProductMetaTags";
 import UserLevelBadge from "../../components/user/UserLevelBadge";
 // 🎯 신고 Modal import 추가
 import ReportModal from "../../components/report/ReportModal";
+import handleStartChat from "../../utils/handleStartChat";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -210,6 +211,23 @@ const ProductDetailPage = () => {
                     <UserLevelBadge levelInfo={sellerLevelInfo} size="md" />
                   )}
                 </div>
+
+                {/* ✅ 판매자에게 문의하기 버튼 추가 */}
+                {!isSeller && (
+                  <button
+                    onClick={() =>
+                      handleStartChat(
+                        product.productId,
+                        navigate,
+                        isAuthenticated
+                      )
+                    }
+                    className="mt-3 w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-secondary transition-colors text-sm font-medium"
+                  >
+                    <i className="bi bi-chat-dots-fill mr-2"></i>
+                    판매자에게 문의하기
+                  </button>
+                )}
               </div>
 
               <ProductInfoSection

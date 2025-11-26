@@ -30,6 +30,8 @@ import MapPage from "../pages/product/MapPage";
 import PaymentSuccessPage from "../pages/payment/PaymentSuccessPage";
 import PaymentCancelPage from "../pages/payment/PaymentCancelPage";
 import PaymentFailPage from "../pages/payment/PaymentFailPage";
+import ChatListPage from "../pages/chat/ChatListPage";
+import ChatRoomPage from "../pages/chat/ChatRoomPage";
 
 const router = createBrowserRouter([
   // Public Routes
@@ -78,6 +80,15 @@ const router = createBrowserRouter([
   {
     path: "/payment/fail",
     element: <PaymentFailPage />,
+  },
+  // ✅ 채팅 라우트 추가
+  {
+    path: "/chat",
+    element: <ChatListPage />,
+  },
+  {
+    path: "/chat/:chatRoomId",
+    element: <ChatRoomPage />,
   },
 
   // Private Routes (로그인 필요)

@@ -546,6 +546,8 @@ const MyPage = () => {
               formatDate={formatDate}
               getStatusBadge={getStatusBadge}
               getProductImageUrl={getProductImageUrl}
+              navigate={navigate} // ✅ 추가
+              isAuthenticated={isAuthenticated} // ✅ 추가
             />
           )}
           {activeTab === "sales" && (
@@ -559,6 +561,7 @@ const MyPage = () => {
               getProductImageUrl={getProductImageUrl}
               confirmPayment={confirmPayment}
               navigate={navigate}
+              isAuthenticated={isAuthenticated} // ✅ 추가
             />
           )}
           {activeTab === "likes" && (
