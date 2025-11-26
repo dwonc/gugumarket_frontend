@@ -1,23 +1,19 @@
 import api from "./axios";
 
 const KAKAO_CLIENT_ID = "15357c9bee4652654d7745794e66a1c1";
-const KAKAO_REDIRECT_URI = "http://localhost:5173/auth/kakao";
+const KAKAO_REDIRECT_URI = window.location.origin + "/auth/kakao"; // ✅ 동적으로 변경
 
 export const kakaoApi = {
-  // 카카오 로그인 페이지로 리다이렉트
-  redirectToKakaoLogin: () => {
-    const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${KAKAO_REDIRECT_URI}&response_type=code`;
-    window.location.href = kakaoAuthUrl;
-  },
+    redirectToKakaoLogin: () => {
+        const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${KAKAO_REDIRECT_URI}&response_type=code`;
+        window.location.href = kakaoAuthUrl;
+    },
 
-  // 카카오 로그인 콜백 처리 (백엔드로 code 전송)
-  kakaoCallback: async (code) => {
-    const response = await api.get(
-      `http://localhost:8080/api/auth/kakao/callback`,
-      {
-        params: { code },
-      }
-    );
-    return response;
-  },
+    kakaoCallback: async (code) => {
+        // ⚠️ 하드코딩된 URL 제거
+        const response = await api.get(`/auth/kakao/callback`, { // ✅ baseURL 사용
+            params: { code },
+        });
+        return response;
+    },
 };
