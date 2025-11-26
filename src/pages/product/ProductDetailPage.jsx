@@ -70,13 +70,10 @@ const ProductDetailPage = () => {
   // 상품 정보 불러오기
   useEffect(() => {
     if (id) {
-      console.log("요청할 상품 ID:", id);
-
       fetchProduct(id)
         .then((data) => {
           const productData = data.product || data;
           if (productData) {
-            console.log("✅ 서버에서 받은 mainImage:", productData.mainImage);
             // ✅ 신고 수 설정
             setReportCount(data.reportCount || 0);
             // 🔥 판매자 등급 정보 불러오기

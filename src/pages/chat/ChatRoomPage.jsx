@@ -120,16 +120,6 @@ const ChatRoomPage = () => {
     scrollToBottom();
   }, [messages]);
 
-  // ✅ 디버깅 로그
-  useEffect(() => {
-    if (messages.length > 0 && user) {
-      console.log("=== 메시지 & 사용자 정보 ===");
-      console.log("user:", user);
-      console.log("user.userId:", user.userId);
-      console.log("첫 번째 메시지:", messages[0]);
-    }
-  }, [messages, user]);
-
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
@@ -170,7 +160,6 @@ const ChatRoomPage = () => {
   // ✅ 개선된 isMyMessage 함수
   const isMyMessage = (message) => {
     if (!user || !message) {
-      console.log("❌ user 또는 message 없음");
       return false;
     }
 
@@ -182,21 +171,8 @@ const ChatRoomPage = () => {
     // 타입 변환해서 비교
     const isMine = Number(messageSenderId) === Number(currentUserId);
 
-    // 디버깅 로그
-    console.log("메시지 비교:", {
-      messageSenderId,
-      currentUserId,
-      senderNickname: message.senderNickname,
-      userNickname: user.nickname,
-      isMine,
-    });
-
     return isMine;
   };
-
-  useEffect(() => {
-    console.log("=== useAuth user ===", user);
-  }, [user]);
 
   if (loading) {
     return (

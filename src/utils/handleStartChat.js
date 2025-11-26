@@ -30,7 +30,6 @@ export const handleStartChat = async (
 
     if (response.success) {
       const chatRoomId = response.chatRoom.chatRoomId;
-      console.log(`✅ 채팅방 생성/조회 성공: ${chatRoomId}`);
 
       // 채팅방 페이지로 이동
       navigate(`/chat/${chatRoomId}`);

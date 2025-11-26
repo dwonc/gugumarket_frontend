@@ -26,10 +26,7 @@ export const useProductStore = create((set, get) => ({
   fetchProduct: async (productId) => {
     set({ loading: true, error: null });
     try {
-      console.log("🔍 fetchProduct 호출, ID:", productId);
-
       const response = await api.get(`/api/products/${productId}`);
-      console.log("🔍 서버 응답:", response.data);
 
       const data = response.data;
 
@@ -43,7 +40,6 @@ export const useProductStore = create((set, get) => ({
         likeCount: data.likeCount,
         interestedBuyers: data.interestedBuyers,
         reportCount: data.reportCount, // 🎯🔥 추가! 🔥🎯
-
       };
     } catch (error) {
       console.error("❌ fetchProduct 실패:", error);
@@ -58,12 +54,8 @@ export const useProductStore = create((set, get) => ({
       const response = await api.get("/api/categories");
       const result = response.data;
 
-      console.log("🔍 받아온 카테고리 원본:", result); // ← 디버깅용
-
       // ✅ data 필드에서 배열 추출!
       const categoriesArray = result.data || [];
-
-      console.log("✅ 설정할 카테고리 배열:", categoriesArray); // ← 디버깅용
 
       set({ categories: categoriesArray });
       return categoriesArray;
@@ -97,8 +89,6 @@ export const useProductStore = create((set, get) => ({
         if (!imageUrl.startsWith("http")) {
           imageUrl = `http://localhost:8080${imageUrl}`;
         }
-
-        console.log("✅ 최종 이미지 URL:", imageUrl);
 
         return imageUrl; // 절대 URL 반환!
       } else {
@@ -135,8 +125,6 @@ export const useProductStore = create((set, get) => ({
           }
           return url;
         });
-
-        console.log("✅ 최종 이미지 URLs:", imageUrls);
 
         return imageUrls;
       } else {

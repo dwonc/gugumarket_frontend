@@ -90,10 +90,6 @@ const ProductEditPage = () => {
     }
   }, [id, fetchCategories, fetchProduct]);
 
-  useEffect(() => {
-    console.log("현재 formData:", formData);
-  }, [formData]);
-
   // 입력값 변경 핸들러
   const handleInputChange = (e) => {
     const { name, value } = e.target;

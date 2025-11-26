@@ -103,6 +103,26 @@ const ChatListPage = () => {
     }
   };
 
+  // 🔥 채팅방 삭제 핸들러
+  const handleDeleteChatRoom = async (e, chatRoomId) => {
+    e.stopPropagation(); // 부모 div 클릭(채팅방 이동) 막기
+
+    if (!window.confirm("이 채팅방을 삭제하시겠습니까?")) return;
+
+    try {
+      const res = await chatApi.deleteChatRoom(chatRoomId);
+      // res.success 체크해도 되고, 안 해도 됨 (백엔드 응답 형식에 맞춰서)
+
+      // 프론트 목록에서 해당 채팅방 제거
+      setChatRooms((prev) =>
+        prev.filter((room) => room.chatRoomId !== chatRoomId)
+      );
+    } catch (err) {
+      console.error("채팅방 삭제 실패:", err);
+      alert("채팅방 삭제에 실패했습니다.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -121,11 +141,13 @@ const ChatListPage = () => {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">채팅</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            상품 판매자/구매자와 대화를 나눠보세요
-          </p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">채팅</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              상품 판매자/구매자와 대화를 나눠보세요
+            </p>
+          </div>
         </div>
 
         {/* Error Message */}
@@ -185,11 +207,24 @@ const ChatListPage = () => {
                           <span className="font-medium">{opponentName}</span>:{" "}
                           {chatRoom.lastMessage || "메시지가 없습니다"}
                         </p>
-                        {unreadCount > 0 && (
-                          <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full ml-2 flex-shrink-0">
-                            {unreadCount}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {unreadCount > 0 && (
+                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                              {unreadCount}
+                            </span>
+                          )}
+
+                          {/* 🗑 삭제 버튼 */}
+                          <button
+                            onClick={(e) =>
+                              handleDeleteChatRoom(e, chatRoom.chatRoomId)
+                            }
+                            className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-gray-100"
+                            title="채팅방 삭제"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

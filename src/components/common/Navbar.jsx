@@ -19,15 +19,6 @@ const Navbar = () => {
   // ✅ 채팅 unreadCount 는 로컬 state 그대로
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
-  useEffect(() => {
-    console.log("📊 Navbar - 인증 상태:", {
-      isAuthenticated,
-      user,
-      role: user?.role,
-      hasAccessToken: !!useAuthStore.getState().accessToken,
-    });
-  }, [isAuthenticated, user]);
-
   // ✅ 알림 unreadCount 초기 로딩 (로그인 / 로그아웃 시)
   useEffect(() => {
     if (!isAuthenticated) {
@@ -44,7 +35,6 @@ const Navbar = () => {
       } catch (error) {
         console.error("알림 개수 조회 실패:", error);
         if (error.response?.status === 401) {
-          console.log("인증 만료, 알림 개수 초기화");
           setUnreadCount(0);
         }
       }
@@ -69,7 +59,6 @@ const Navbar = () => {
       } catch (error) {
         console.error("채팅 읽지 않은 메시지 개수 조회 실패:", error);
         if (error.response?.status === 401) {
-          console.log("인증 만료, 채팅 개수 초기화");
           setChatUnreadCount(0);
         }
       }
@@ -96,7 +85,6 @@ const Navbar = () => {
     } catch (error) {
       console.error("채팅 읽지 않은 메시지 개수 조회 실패:", error);
       if (error.response?.status === 401) {
-        console.log("인증 만료, 채팅 개수 초기화");
         setChatUnreadCount(0);
       }
     }
@@ -104,22 +92,13 @@ const Navbar = () => {
 
   // ✅ WebSocket 실시간 알림 카운트 반영
   useEffect(() => {
-    console.log("🟢 Navbar WS 상태:", {
-      connected,
-      isAuthenticated,
-      userId: user?.userId,
-    });
-
     if (!connected) return;
     if (!isAuthenticated) return;
     if (!user || !user.userId) return;
 
     const dest = `/topic/notifications-count/${user.userId}`;
-    console.log("🔔 Navbar 알림 카운트 구독 시작:", dest);
 
     subscribeDestination(dest, (payload) => {
-      console.log("🔔 Navbar 실시간 알림 수신:", payload);
-
       if (typeof payload === "number") {
         setUnreadCount(payload);
       } else if (typeof payload === "string" && !isNaN(Number(payload))) {
@@ -151,12 +130,11 @@ const Navbar = () => {
     if (!user?.userId) return;
 
     const dest = `/topic/chat/unread-count/${user.userId}`;
-    console.log("💬 채팅 unread 구독 시작:", dest);
 
     subscribeDestination(dest, (payload) => {
       // backend에서 long 그대로 보내니까 string/number 둘 다 처리
       const count = Number(payload);
-      console.log("💬 실시간 채팅 unread 수신:", count);
+
       if (!Number.isNaN(count)) {
         setChatUnreadCount(count);
       }

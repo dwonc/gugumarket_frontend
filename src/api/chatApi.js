@@ -9,18 +9,12 @@ const chatApi = {
    */
   createOrGetChatRoom: async (productId) => {
     try {
-      console.log("=== createOrGetChatRoom 호출 ===");
-      console.log("productId:", productId);
-
       const response = await axios.post("/api/chat/rooms", {
         productId: productId,
       });
 
-      console.log("채팅방 생성/조회 응답:", response.data);
       return response.data;
     } catch (error) {
-      console.error("채팅방 생성/조회 실패:", error);
-      console.error("에러 응답:", error.response?.data);
       throw error;
     }
   },
@@ -33,15 +27,11 @@ const chatApi = {
    */
   createChatRoomWithUser: async (productId, otherUserId) => {
     try {
-      console.log("=== createChatRoomWithUser 호출 ===");
-      console.log("productId:", productId, "otherUserId:", otherUserId);
-
       const response = await axios.post("/api/chat/rooms/with-user", {
         productId: productId,
         otherUserId: otherUserId,
       });
 
-      console.log("채팅방 생성/조회 응답:", response.data);
       return response.data;
     } catch (error) {
       console.error("채팅방 생성/조회 실패:", error);

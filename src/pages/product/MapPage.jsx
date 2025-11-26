@@ -21,23 +21,17 @@ const MapPage = () => {
   // 🆕 상품 목록 가져오기 (가격 필터 포함)
   const loadProducts = async () => {
     try {
-      console.log("🔄 상품 로딩 시작... (가격필터:", priceFilter, ")");
-
       let url = "http://localhost:8080/api/products/map";
       if (priceFilter) {
         url += `?maxPrice=${priceFilter}`;
       }
 
       const response = await axios.get(url);
-      console.log("📦 API 응답:", response.data);
 
       if (response.data.success) {
-        console.log("✅ 상품 로드 성공:", response.data.products.length, "개");
-
         const withCoords = response.data.products.filter(
           (p) => p.latitude != null && p.longitude != null
         );
-        console.log("📍 좌표 있는 상품:", withCoords.length, "개");
 
         setProducts(response.data.products);
         setFilteredProducts(response.data.products);
@@ -86,8 +80,6 @@ const MapPage = () => {
 
       return distance <= radius;
     });
-
-    console.log(`📍 반경 ${radius}km 내 상품: ${filtered.length}개`);
     setFilteredProducts(filtered);
   };
 
@@ -115,7 +107,6 @@ const MapPage = () => {
           longitude: position.coords.longitude,
         };
         setUserLocation(location);
-        console.log("📍 현재 위치:", location);
 
         if (map) {
           const moveLatLon = new window.kakao.maps.LatLng(
@@ -228,8 +219,6 @@ const MapPage = () => {
       return;
     }
 
-    console.log("🥚 알 마커 생성 시작!", filteredProducts.length, "개");
-
     // 기존 마커 제거
     markers.forEach((marker) => {
       if (marker && marker.setMap) {
@@ -311,12 +300,10 @@ const MapPage = () => {
 
         // 🆕 마우스 호버 이벤트
         markerContent.addEventListener("mouseenter", () => {
-          console.log("🐣 알에 마우스 올림:", product.productName);
           setHoveredProduct(product);
         });
 
         markerContent.addEventListener("mouseleave", () => {
-          console.log("🥚 알에서 마우스 뗌");
           // 약간의 딜레이를 줘서 미리보기 카드로 마우스 이동 가능하게
           setTimeout(() => {
             setHoveredProduct(null);
@@ -325,7 +312,6 @@ const MapPage = () => {
 
         // 클릭 시 상세 모달
         markerContent.addEventListener("click", () => {
-          console.log("🖱️ 알 클릭:", product.productName);
           setSelectedProduct(product);
           map.setCenter(position);
           map.setLevel(4);
@@ -337,11 +323,9 @@ const MapPage = () => {
     });
 
     setMarkers(newMarkers);
-    console.log("🗺️ 알 마커 생성 완료:", newMarkers.length, "개");
 
     if (newMarkers.length > 0 && !radiusFilter) {
       map.setBounds(bounds);
-      console.log("🗺️ 지도 범위 조정 완료");
     }
   }, [map, filteredProducts, radiusFilter, hoveredProduct]);
 

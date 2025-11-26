@@ -24,12 +24,6 @@ const useLikeStore = create((set, get) => ({
       likedProductIds: likedIds,
       likeCounts: counts,
     });
-
-    console.log("💖 찜 상태 초기화:", {
-      찜한상품수: likedIds.size,
-      전체상품수: products.length,
-      찜한상품ID: Array.from(likedIds),
-    });
   },
 
   // 특정 상품의 찜 여부 확인
@@ -65,12 +59,6 @@ const useLikeStore = create((set, get) => ({
           likeCounts: newCounts,
         });
 
-        console.log("💖 찜 상태 변경:", {
-          상품ID: productId,
-          찜여부: response.isLiked,
-          찜개수: response.likeCount,
-        });
-
         return response;
       } else {
         throw new Error(response.message || "찜하기 실패");
@@ -87,7 +75,6 @@ const useLikeStore = create((set, get) => ({
       likedProductIds: new Set(),
       likeCounts: new Map(),
     });
-    console.log("💖 찜 상태 초기화됨");
   },
 }));
 

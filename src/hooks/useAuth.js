@@ -50,16 +50,10 @@ const useAuth = () => {
    */
   const handleKakaoCallback = async (code) => {
     try {
-      console.log("🔐 카카오 콜백 처리 시작 - code:", code);
-
       const response = await authApi.kakaoCallback(code);
-
-      console.log("📥 카카오 콜백 응답:", response);
 
       if (response.data.success) {
         const loginData = response.data.data;
-
-        console.log("✅ 카카오 로그인 성공:", loginData);
 
         // Zustand store에 저장
         login({
@@ -116,16 +110,12 @@ const useAuth = () => {
    */
   const handleCompleteProfile = async (profileData) => {
     try {
-      console.log("📝 필수정보 입력 시작:", profileData);
-
       const response = await authApi.completeProfile(profileData);
 
       if (response.data.success) {
         // Zustand store 업데이트
         const updatedUser = response.data.user;
         updateUser(updatedUser);
-
-        console.log("✅ 필수정보 입력 성공:", updatedUser);
 
         // 메인 페이지로 이동
         navigate("/");

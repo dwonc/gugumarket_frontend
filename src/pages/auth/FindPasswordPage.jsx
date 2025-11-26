@@ -24,8 +24,6 @@ const FindPasswordPage = () => {
   const handleVerifyEmail = async (e) => {
     e.preventDefault();
 
-    console.log("🔐 이메일 인증 시작:", formData);
-
     setError("");
     setLoading(true);
 
@@ -35,12 +33,9 @@ const FindPasswordPage = () => {
         formData.email
       );
 
-      console.log("✅ 이메일 인증 응답:", response);
-
       if (response.data.success) {
         setResetToken(response.data.data.resetToken);
         setStep(2);
-        console.log("✅ Step 2로 이동, 토큰:", response.data.data.resetToken);
       } else {
         setError(response.data.message);
       }
@@ -59,8 +54,6 @@ const FindPasswordPage = () => {
   // Step 2: 비밀번호 재설정
   const handleResetPassword = async (e) => {
     e.preventDefault();
-
-    console.log("🔑 비밀번호 재설정 시작, 토큰:", resetToken);
 
     setError("");
 
@@ -81,8 +74,6 @@ const FindPasswordPage = () => {
         resetToken,
         formData.newPassword
       );
-
-      console.log("✅ 비밀번호 재설정 응답:", response);
 
       if (response.data.success) {
         alert("비밀번호가 성공적으로 변경되었습니다!");

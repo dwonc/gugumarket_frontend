@@ -78,12 +78,6 @@ api.interceptors.request.use(
   (config) => {
     const { accessToken } = useAuthStore.getState();
 
-    console.log("🔍 API 요청:", config.url);
-    console.log(
-      "🔑 accessToken:",
-      accessToken ? accessToken.substring(0, 30) + "..." : "null"
-    );
-
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }

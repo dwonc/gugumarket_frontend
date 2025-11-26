@@ -65,38 +65,13 @@ const MyPage = () => {
     const authStorage = localStorage.getItem("auth-storage");
     const { accessToken, isAuthenticated: storeAuth } = useAuthStore.getState();
 
-    console.log("=== 🔍 인증 상태 디버깅 ===");
-    console.log("1. isAuthenticated (컴포넌트):", isAuthenticated);
-    console.log("2. isAuthenticated (스토어):", storeAuth);
-    console.log(
-      "3. localStorage auth-storage:",
-      authStorage ? "존재함" : "없음"
-    );
-    console.log(
-      "4. Zustand accessToken:",
-      accessToken ? accessToken.substring(0, 30) + "..." : "없음"
-    );
-    console.log("5. 현재 위치:", location.pathname);
-
     if (authStorage) {
       try {
         const parsed = JSON.parse(authStorage);
-        console.log(
-          "6. 저장된 토큰:",
-          parsed.state?.accessToken?.substring(0, 20) + "..."
-        );
-        console.log(
-          "7. 저장된 사용자:",
-          parsed.state?.user?.nickname || "없음"
-        );
       } catch (e) {
         console.error("❌ localStorage 파싱 실패:", e);
       }
-    } else {
-      console.log("❌ auth-storage가 localStorage에 없습니다!");
-      console.log("   → 로그인이 필요합니다.");
     }
-    console.log("========================");
   }, [isAuthenticated, location]);
 
   const fetchData = useCallback(async () => {
@@ -138,7 +113,6 @@ const MyPage = () => {
     try {
       const response = await reportApi.getMyReports();
       if (response.data.success) {
-        console.log(response);
         setReports(response.data.reports);
       }
     } catch (error) {

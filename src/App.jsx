@@ -8,9 +8,6 @@ function App() {
   useEffect(() => {
     const { initialize } = useAuthStore.getState();
     initialize();
-
-    console.log("✅ App 초기화 완료");
-    console.log("현재 인증 상태:", useAuthStore.getState().isAuthenticated);
   }, []);
 
   return <RouterProvider router={router} />;

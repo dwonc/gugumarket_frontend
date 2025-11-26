@@ -1,4 +1,3 @@
-console.log("🔍 NotificationBell user:", user);
 // src/components/layout/NotificationBell.jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -38,11 +37,8 @@ const NotificationBell = () => {
     if (!user || !user.userId) return;
 
     const dest = `/topic/notifications-count/${user.userId}`;
-    console.log("🔔 알림 카운트 구독:", dest);
 
     subscribeDestination(dest, (payload) => {
-      console.log("🔔 알림 카운트 수신:", payload);
-
       // 서버에서 payload = 21 같은 숫자만 보내는 상태니까
       if (typeof payload === "number") {
         setUnreadCount(payload);
@@ -53,19 +49,13 @@ const NotificationBell = () => {
   }, [connected, initialized, user, subscribeDestination, setUnreadCount]);
 
   useEffect(() => {
-    console.log("🔔 connected:", connected);
-    console.log("🔔 initialized:", initialized);
-    console.log("🔔 userId:", user?.userId);
-
     if (!connected) return;
     if (!initialized) return;
     if (!user || !user.userId) return;
 
     const dest = `/topic/notifications-count/${user.userId}`;
-    console.log("🔔 알림 카운트 구독 시작:", dest);
 
     subscribeDestination(dest, (payload) => {
-      console.log("🔔 실시간 알림 수신:", payload);
       setUnreadCount(Number(payload));
     });
   }, [connected, initialized, user]);

@@ -13,12 +13,10 @@ const useWebSocket = () => {
 
   const connect = useCallback(() => {
     if (clientRef.current?.connected) {
-      console.log("✅ WebSocket이 이미 연결되어 있습니다.");
       return;
     }
 
     if (!accessToken) {
-      console.log("❌ accessToken 없음, WebSocket 연결 안 함");
       return;
     }
 
@@ -37,7 +35,6 @@ const useWebSocket = () => {
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
         onConnect: () => {
-          console.log("✅ WebSocket 연결 성공!");
           setConnected(true);
           setError(null);
         },
@@ -47,7 +44,6 @@ const useWebSocket = () => {
           setConnected(false);
         },
         onDisconnect: () => {
-          console.log("🔌 WebSocket 연결 해제");
           setConnected(false);
         },
       });
@@ -71,7 +67,6 @@ const useWebSocket = () => {
       clientRef.current.deactivate();
       clientRef.current = null;
       setConnected(false);
-      console.log("✅ WebSocket 연결 해제 완료");
     }
   }, []);
 
@@ -95,12 +90,10 @@ const useWebSocket = () => {
         } catch {
           payload = message.body;
         }
-        console.log("📨 메세지 수신:", destination, payload);
         callback(payload);
       });
 
       subscriptionsRef.current[destination] = sub;
-      console.log(`✅ 구독 성공: ${destination}`);
     } catch (err) {
       console.error(`❌ 구독 실패: ${destination}`, err);
     }
@@ -110,7 +103,6 @@ const useWebSocket = () => {
     if (subscriptionsRef.current[destination]) {
       subscriptionsRef.current[destination].unsubscribe();
       delete subscriptionsRef.current[destination];
-      console.log(`✅ 구독 해제: ${destination}`);
     }
   }, []);
 
@@ -145,7 +137,6 @@ const useWebSocket = () => {
         content,
       }),
     });
-    console.log("✅ 메시지 전송:", content);
   }, []);
 
   const enterChatRoom = useCallback((chatRoomId) => {

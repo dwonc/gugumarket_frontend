@@ -72,12 +72,6 @@ const TransactionDetailPage = () => {
 
   // ✅ 1:1 채팅 시작
   const handleStartChat = async () => {
-    console.log("=== handleStartChat 시작 ===");
-    console.log("transaction 전체:", transaction);
-    console.log("transaction.productId:", transaction?.productId);
-    console.log("isSeller:", isSeller);
-    console.log("isBuyer:", isBuyer);
-
     if (!transaction) {
       alert("거래 정보를 찾을 수 없습니다.");
       console.error("❌ transaction이 null/undefined");
@@ -95,11 +89,9 @@ const TransactionDetailPage = () => {
     if (isSeller) {
       // 판매자면 구매자와 대화
       otherUserId = transaction.buyerId;
-      console.log("✅ 판매자 → 구매자와 대화, buyerId:", otherUserId);
     } else if (isBuyer) {
       // 구매자면 판매자와 대화
       otherUserId = transaction.sellerId;
-      console.log("✅ 구매자 → 판매자와 대화, sellerId:", otherUserId);
     }
 
     if (!otherUserId) {
@@ -115,21 +107,13 @@ const TransactionDetailPage = () => {
     try {
       setStartingChat(true);
 
-      console.log("✅ 채팅방 생성/조회 요청:", {
-        productId: transaction.productId,
-        otherUserId: otherUserId,
-      });
-
       // ✅ 상대방과 채팅방 생성/조회
       const response = await chatApi.createChatRoomWithUser(
         transaction.productId,
         otherUserId
       );
 
-      console.log("✅ 채팅방 생성/조회 응답:", response);
-
       if (response.success && response.chatRoom) {
-        console.log("✅ 채팅방으로 이동:", response.chatRoom.chatRoomId);
         // 채팅방으로 이동
         navigate(`/chat/${response.chatRoom.chatRoomId}`);
       } else {

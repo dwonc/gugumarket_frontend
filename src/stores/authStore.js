@@ -13,7 +13,6 @@ const useAuthStore = create(
 
       // Actions
       login: (loginData) => {
-        console.log("🔐 로그인 데이터 저장:", loginData); // 디버깅용
         set({
           user: loginData.user,
           accessToken: loginData.accessToken,
@@ -23,8 +22,6 @@ const useAuthStore = create(
       },
 
       logout: () => {
-        console.log("🚪 로그아웃"); // 디버깅용
-
         useLikeStore.getState().reset();
 
         set({
@@ -46,7 +43,6 @@ const useAuthStore = create(
       // 🔥 초기화 함수 추가 (LocalStorage에서 복원)
       initialize: () => {
         const state = get();
-        console.log("🔄 authStore 초기화:", state); // 디버깅용
 
         // isAuthenticated 재계산
         if (state.accessToken && state.user) {
@@ -67,7 +63,6 @@ const useAuthStore = create(
       }),
       // 🔥 hydration 완료 후 콜백
       onRehydrateStorage: () => (state) => {
-        console.log("💧 Hydration 완료:", state); // 디버깅용
         if (state) {
           state.initialize();
         }

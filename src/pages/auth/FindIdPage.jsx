@@ -11,16 +11,12 @@ const FindIdPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("🔍 아이디 찾기 시작 - 이메일:", email);
-
     setError("");
     setResult(null);
     setLoading(true);
 
     try {
       const response = await userApi.findUsername(email);
-
-      console.log("✅ 응답 받음:", response);
 
       if (response.data.success) {
         setResult(response.data.data.userName);

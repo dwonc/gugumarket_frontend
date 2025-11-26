@@ -167,9 +167,6 @@ const ProductWritePage = () => {
       return;
     }
 
-    console.log("📤 전송할 formData:", formData); // ← 추가
-    console.log("📤 additionalImages:", formData.additionalImages); // ← 추가
-
     try {
       const product = await createProduct(formData);
       alert("✅ 상품이 등록되었습니다!");

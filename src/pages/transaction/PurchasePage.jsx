@@ -41,7 +41,6 @@ const PurchasePage = () => {
         });
 
         const payload = res.data;
-        console.log("purchase ready payload:", payload);
 
         if (!payload || payload.success === false || !payload.data) {
           throw new Error(
@@ -128,7 +127,6 @@ const PurchasePage = () => {
       });
 
       const payload = res.data;
-      console.log("create purchase payload:", payload);
 
       if (!payload || payload.success === false) {
         throw new Error(
