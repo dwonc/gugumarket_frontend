@@ -15,6 +15,7 @@ const useAuth = () => {
 
       login({
         user: {
+          userId: data.userId, // 🔥 핵심
           userName: data.username,
           nickname: data.username,
           email: data.email,
@@ -62,7 +63,14 @@ const useAuth = () => {
 
         // Zustand store에 저장
         login({
-          user: loginData.user,
+          user: {
+            userId: loginData.userId ?? loginData.user?.userId,
+            userName: loginData.username ?? loginData.user?.userName,
+            nickname: loginData.user?.nickname ?? loginData.username,
+            email: loginData.email ?? loginData.user?.email,
+            role: loginData.role ?? loginData.user?.role,
+            profileImage: loginData.user?.profileImage,
+          },
           accessToken: loginData.accessToken,
           refreshToken: loginData.refreshToken,
         });

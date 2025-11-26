@@ -120,6 +120,16 @@ const ChatRoomPage = () => {
     scrollToBottom();
   }, [messages]);
 
+  // ✅ 디버깅 로그
+  useEffect(() => {
+    if (messages.length > 0 && user) {
+      console.log("=== 메시지 & 사용자 정보 ===");
+      console.log("user:", user);
+      console.log("user.userId:", user.userId);
+      console.log("첫 번째 메시지:", messages[0]);
+    }
+  }, [messages, user]);
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
@@ -157,11 +167,36 @@ const ChatRoomPage = () => {
     return price ? price.toLocaleString("ko-KR") : "0";
   };
 
-  // ✅ 내 메시지 판별
+  // ✅ 개선된 isMyMessage 함수
   const isMyMessage = (message) => {
-    if (!user || !message) return false;
-    return message.senderId === user.userId;
+    if (!user || !message) {
+      console.log("❌ user 또는 message 없음");
+      return false;
+    }
+
+    // 여러 필드명 지원
+    const messageSenderId =
+      message.senderId || message.sender?.userId || message.senderUserId;
+    const currentUserId = user.userId || user.id;
+
+    // 타입 변환해서 비교
+    const isMine = Number(messageSenderId) === Number(currentUserId);
+
+    // 디버깅 로그
+    console.log("메시지 비교:", {
+      messageSenderId,
+      currentUserId,
+      senderNickname: message.senderNickname,
+      userNickname: user.nickname,
+      isMine,
+    });
+
+    return isMine;
   };
+
+  useEffect(() => {
+    console.log("=== useAuth user ===", user);
+  }, [user]);
 
   if (loading) {
     return (
@@ -226,10 +261,11 @@ const ChatRoomPage = () => {
         )}
       </div>
 
-      {/* Messages - 슬랙 스타일 */}
+      {/* Messages - 카카오톡 스타일 */}
       <div
         ref={messageListRef}
-        className="flex-1 overflow-y-auto px-4 py-6 space-y-3"
+        className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
+        style={{ backgroundColor: "#B2C7D9" }}
       >
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 py-12">
@@ -240,54 +276,56 @@ const ChatRoomPage = () => {
         ) : (
           messages.map((message, index) => {
             const isMine = isMyMessage(message);
+            // ✅ 여러 필드명 지원
+            const messageContent =
+              message.content || message.message || message.text || "";
 
             return (
-              <div key={message.messageId || index} className="flex gap-3">
-                {/* 🔥 모든 메시지에 프로필 아이콘 표시 */}
-                <div className="flex-shrink-0">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
-                      isMine
-                        ? "bg-gradient-to-br from-primary to-secondary"
-                        : "bg-gradient-to-br from-red-500 to-pink-500"
-                    }`}
-                  >
-                    {message.senderNickname?.charAt(0) || "?"}
-                  </div>
-                </div>
+              <div
+                key={message.messageId || index}
+                className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+              >
+                {/* 상대방 메시지 (왼쪽) */}
+                {!isMine && (
+                  <div className="flex items-end gap-2 max-w-[70%]">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-red-500 to-pink-500">
+                        {message.senderNickname?.charAt(0) || "?"}
+                      </div>
+                    </div>
 
-                {/* 메시지 영역 */}
-                <div className="flex-1 min-w-0">
-                  {/* 닉네임 + 시간 */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <p
-                      className={`text-sm font-semibold ${
-                        isMine ? "text-primary" : "text-gray-900"
-                      }`}
-                    >
-                      {message.senderNickname || "익명"}
-                      {isMine && (
-                        <span className="text-xs text-gray-500 ml-1">(나)</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-500">
+                    <div className="flex flex-col">
+                      <p className="text-xs text-gray-700 font-semibold mb-1 ml-1">
+                        {message.senderNickname || "익명"}
+                      </p>
+
+                      <div className="flex items-end gap-1">
+                        <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-2 shadow-sm">
+                          <p className="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                            {messageContent}
+                          </p>
+                        </div>
+                        <span className="text-xs text-gray-600 mb-1">
+                          {formatDate(message.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 내 메시지 (오른쪽) */}
+                {isMine && (
+                  <div className="flex items-end gap-1 max-w-[70%]">
+                    <span className="text-xs text-gray-600 mb-1">
                       {formatDate(message.createdAt)}
-                    </p>
+                    </span>
+                    <div className="bg-yellow-300 rounded-2xl rounded-br-sm px-4 py-2 shadow-sm">
+                      <p className="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                        {messageContent}
+                      </p>
+                    </div>
                   </div>
-
-                  {/* 메시지 내용 */}
-                  <div
-                    className={`inline-block px-4 py-2 rounded-lg max-w-full ${
-                      isMine
-                        ? "bg-blue-50 text-gray-900 border border-blue-200"
-                        : "bg-white text-gray-900 border border-gray-200"
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap break-words">
-                      {message.content}
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
             );
           })
