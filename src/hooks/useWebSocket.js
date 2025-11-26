@@ -1,3 +1,4 @@
+// src/hooks/useWebSocket.js
 import { useState, useEffect, useRef, useCallback } from "react";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
@@ -10,9 +11,6 @@ const useWebSocket = () => {
   const subscriptionsRef = useRef({});
   const { accessToken } = useAuthStore();
 
-  /**
-   * WebSocket 연결
-   */
   const connect = useCallback(() => {
     if (clientRef.current?.connected) {
       console.log("✅ WebSocket이 이미 연결되어 있습니다.");
@@ -20,8 +18,7 @@ const useWebSocket = () => {
     }
 
     if (!accessToken) {
-      console.error("❌ accessToken이 없습니다. 연결할 수 없습니다.");
-      setError("인증 토큰이 없습니다.");
+      console.log("❌ accessToken 없음, WebSocket 연결 안 함");
       return;
     }
 
@@ -35,9 +32,7 @@ const useWebSocket = () => {
         connectHeaders: {
           Authorization: `Bearer ${accessToken}`,
         },
-        debug: (str) => {
-          console.log("🔌 STOMP:", str);
-        },
+        debug: (str) => console.log("🔌 STOMP:", str),
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
@@ -66,12 +61,8 @@ const useWebSocket = () => {
     }
   }, [accessToken]);
 
-  /**
-   * WebSocket 연결 해제
-   */
   const disconnect = useCallback(() => {
     if (clientRef.current) {
-      // 모든 구독 해제
       Object.keys(subscriptionsRef.current).forEach((destination) => {
         subscriptionsRef.current[destination]?.unsubscribe();
       });
@@ -84,49 +75,38 @@ const useWebSocket = () => {
     }
   }, []);
 
-  /**
-   * 채팅방 구독
-   */
-  const subscribe = useCallback((chatRoomId, callback) => {
+  /** 어디든 구독할 수 있는 공용 함수 */
+  const subscribeDestination = useCallback((destination, callback) => {
     if (!clientRef.current?.connected) {
       console.error("❌ WebSocket이 연결되어 있지 않습니다.");
       return;
     }
 
-    const destination = `/topic/chat/${chatRoomId}`;
-
-    // 이미 구독 중이면 무시
-    if (subscriptionsRef.current[destination]) {
-      console.log(`✅ 이미 구독 중: ${destination}`);
-      return;
-    }
+    // if (subscriptionsRef.current[destination]) {
+    //   console.log(`✅ 이미 구독 중: ${destination}`);
+    //   return;
+    // }
 
     try {
-      const subscription = clientRef.current.subscribe(
-        destination,
-        (message) => {
-          try {
-            const data = JSON.parse(message.body);
-            console.log("📨 메시지 수신:", data);
-            callback(data);
-          } catch (err) {
-            console.error("❌ 메시지 파싱 실패:", err);
-          }
+      const sub = clientRef.current.subscribe(destination, (message) => {
+        let payload = null;
+        try {
+          payload = JSON.parse(message.body);
+        } catch {
+          payload = message.body;
         }
-      );
+        console.log("📨 메세지 수신:", destination, payload);
+        callback(payload);
+      });
 
-      subscriptionsRef.current[destination] = subscription;
+      subscriptionsRef.current[destination] = sub;
       console.log(`✅ 구독 성공: ${destination}`);
     } catch (err) {
       console.error(`❌ 구독 실패: ${destination}`, err);
     }
   }, []);
 
-  /**
-   * 구독 해제
-   */
-  const unsubscribe = useCallback((chatRoomId) => {
-    const destination = `/topic/chat/${chatRoomId}`;
+  const unsubscribeDestination = useCallback((destination) => {
     if (subscriptionsRef.current[destination]) {
       subscriptionsRef.current[destination].unsubscribe();
       delete subscriptionsRef.current[destination];
@@ -134,88 +114,73 @@ const useWebSocket = () => {
     }
   }, []);
 
-  /**
-   * 메시지 전송
-   */
+  /** 기존 채팅용 래퍼들 – 네 코드랑 맞춰서 */
+  const subscribe = useCallback(
+    (chatRoomId, callback) => {
+      const dest = `/topic/chat/${chatRoomId}`;
+      subscribeDestination(dest, callback);
+    },
+    [subscribeDestination]
+  );
+
+  const unsubscribe = useCallback(
+    (chatRoomId) => {
+      const dest = `/topic/chat/${chatRoomId}`;
+      unsubscribeDestination(dest);
+    },
+    [unsubscribeDestination]
+  );
+
   const sendMessage = useCallback((chatRoomId, content) => {
     if (!clientRef.current?.connected) {
       console.error("❌ WebSocket이 연결되어 있지 않습니다.");
       return;
     }
 
-    try {
-      clientRef.current.publish({
-        destination: "/app/chat/send",
-        body: JSON.stringify({
-          chatRoomId,
-          messageType: "TEXT",
-          content,
-        }),
-      });
-      console.log("✅ 메시지 전송:", content);
-    } catch (err) {
-      console.error("❌ 메시지 전송 실패:", err);
-    }
+    clientRef.current.publish({
+      destination: "/app/chat/send",
+      body: JSON.stringify({
+        chatRoomId,
+        messageType: "TEXT",
+        content,
+      }),
+    });
+    console.log("✅ 메시지 전송:", content);
   }, []);
 
-  /**
-   * 입장 알림
-   */
   const enterChatRoom = useCallback((chatRoomId) => {
-    if (!clientRef.current?.connected) {
-      console.error("❌ WebSocket이 연결되어 있지 않습니다.");
-      return;
-    }
-
-    try {
-      clientRef.current.publish({
-        destination: "/app/chat/enter",
-        body: JSON.stringify({ chatRoomId }),
-      });
-      console.log(`✅ 입장 알림 전송: ${chatRoomId}`);
-    } catch (err) {
-      console.error("❌ 입장 알림 전송 실패:", err);
-    }
+    if (!clientRef.current?.connected) return;
+    clientRef.current.publish({
+      destination: "/app/chat/enter",
+      body: JSON.stringify({ chatRoomId }),
+    });
   }, []);
 
-  /**
-   * 퇴장 알림
-   */
   const leaveChatRoom = useCallback((chatRoomId) => {
-    if (!clientRef.current?.connected) {
-      console.error("❌ WebSocket이 연결되어 있지 않습니다.");
-      return;
-    }
-
-    try {
-      clientRef.current.publish({
-        destination: "/app/chat/leave",
-        body: JSON.stringify({ chatRoomId }),
-      });
-      console.log(`✅ 퇴장 알림 전송: ${chatRoomId}`);
-    } catch (err) {
-      console.error("❌ 퇴장 알림 전송 실패:", err);
-    }
+    if (!clientRef.current?.connected) return;
+    clientRef.current.publish({
+      destination: "/app/chat/leave",
+      body: JSON.stringify({ chatRoomId }),
+    });
   }, []);
 
-  /**
-   * 컴포넌트 마운트 시 자동 연결
-   */
+  /** 🔥 accessToken 생길 때마다 connect 시도 */
   useEffect(() => {
-    connect();
-
-    // 컴포넌트 언마운트 시 연결 해제
+    if (accessToken) {
+      connect();
+    }
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+  }, [accessToken, connect, disconnect]);
 
   return {
     connected,
     error,
     connect,
     disconnect,
-    subscribe,
+    subscribe, // 채팅방용
+    subscribeDestination, // 공용 (알림/채팅 뱃지 등)
     unsubscribe,
     sendMessage,
     enterChatRoom,

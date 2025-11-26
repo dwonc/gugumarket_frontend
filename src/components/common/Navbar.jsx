@@ -3,13 +3,20 @@ import { useState, useEffect } from "react";
 import useAuthStore from "../../stores/authStore";
 import { notificationApi } from "../../api/notificationApi";
 import chatApi from "../../api/chatApi"; // ✅ 추가!
+import useNotificationStore from "../../stores/notificationStore"; // ✅ 추가
+import useWebSocket from "../../hooks/useWebSocket"; // ✅ 추가
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
 
-  // ✅ 알림과 채팅 unreadCount 분리
-  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  // ✅ 알림은 전역 store 사용
+  const { unreadCount, setUnreadCount } = useNotificationStore();
+
+  // ✅ WebSocket
+  const { connected, subscribeDestination } = useWebSocket();
+
+  // ✅ 채팅 unreadCount 는 로컬 state 그대로
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -21,47 +28,58 @@ const Navbar = () => {
     });
   }, [isAuthenticated, user]);
 
+  // ✅ 알림 unreadCount 초기 로딩 (로그인 / 로그아웃 시)
   useEffect(() => {
-    if (isAuthenticated) {
-      // ✅ 알림 개수 조회
-      fetchNotificationUnreadCount();
-
-      // ✅ 채팅 읽지 않은 메시지 개수 조회
-      fetchChatUnreadCount();
-
-      // ✅ 30초마다 갱신
-      const interval = setInterval(() => {
-        fetchNotificationUnreadCount();
-        fetchChatUnreadCount();
-      }, 30000);
-
-      return () => clearInterval(interval);
-    } else {
-      setNotificationUnreadCount(0);
-      setChatUnreadCount(0);
-    }
-  }, [isAuthenticated]);
-
-  // ✅ 알림 읽지 않은 개수 조회
-  const fetchNotificationUnreadCount = async () => {
     if (!isAuthenticated) {
-      setNotificationUnreadCount(0);
+      setUnreadCount(0);
       return;
     }
 
-    try {
-      const response = await notificationApi.getUnreadCount();
-      if (response.data.success) {
-        setNotificationUnreadCount(response.data.data.count);
+    const fetchNotificationUnreadCount = async () => {
+      try {
+        const response = await notificationApi.getUnreadCount();
+        if (response.data.success) {
+          setUnreadCount(response.data.data.count);
+        }
+      } catch (error) {
+        console.error("알림 개수 조회 실패:", error);
+        if (error.response?.status === 401) {
+          console.log("인증 만료, 알림 개수 초기화");
+          setUnreadCount(0);
+        }
       }
-    } catch (error) {
-      console.error("알림 개수 조회 실패:", error);
-      if (error.response?.status === 401) {
-        console.log("인증 만료, 알림 개수 초기화");
-        setNotificationUnreadCount(0);
-      }
+    };
+
+    fetchNotificationUnreadCount();
+  }, [isAuthenticated, setUnreadCount]);
+
+  // ✅ 채팅 읽지 않은 메시지 개수 조회 + 30초마다 갱신
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setChatUnreadCount(0);
+      return;
     }
-  };
+
+    const fetchChatUnreadCount = async () => {
+      try {
+        const response = await chatApi.getTotalUnreadCount();
+        if (response.success) {
+          setChatUnreadCount(response.unreadCount);
+        }
+      } catch (error) {
+        console.error("채팅 읽지 않은 메시지 개수 조회 실패:", error);
+        if (error.response?.status === 401) {
+          console.log("인증 만료, 채팅 개수 초기화");
+          setChatUnreadCount(0);
+        }
+      }
+    };
+
+    fetchChatUnreadCount(); // 초기 1번
+
+    const interval = setInterval(fetchChatUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   // ✅ 채팅 읽지 않은 메시지 개수 조회
   const fetchChatUnreadCount = async () => {
@@ -84,10 +102,66 @@ const Navbar = () => {
     }
   };
 
+  // ✅ WebSocket 실시간 알림 카운트 반영
+  useEffect(() => {
+    console.log("🟢 Navbar WS 상태:", {
+      connected,
+      isAuthenticated,
+      userId: user?.userId,
+    });
+
+    if (!connected) return;
+    if (!isAuthenticated) return;
+    if (!user || !user.userId) return;
+
+    const dest = `/topic/notifications-count/${user.userId}`;
+    console.log("🔔 Navbar 알림 카운트 구독 시작:", dest);
+
+    subscribeDestination(dest, (payload) => {
+      console.log("🔔 Navbar 실시간 알림 수신:", payload);
+
+      if (typeof payload === "number") {
+        setUnreadCount(payload);
+      } else if (typeof payload === "string" && !isNaN(Number(payload))) {
+        setUnreadCount(Number(payload));
+      } else if (payload?.unreadCount != null) {
+        setUnreadCount(Number(payload.unreadCount));
+      } else {
+        // 혹시 NotificationDto만 날라오면 일단 +1
+        setUnreadCount((prev) => prev + 1);
+      }
+    });
+  }, [
+    connected,
+    isAuthenticated,
+    user?.userId,
+    subscribeDestination,
+    setUnreadCount,
+  ]);
+
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
+
+  // ✅ 채팅 unreadCount 실시간 구독
+  useEffect(() => {
+    if (!connected) return;
+    if (!isAuthenticated) return;
+    if (!user?.userId) return;
+
+    const dest = `/topic/chat/unread-count/${user.userId}`;
+    console.log("💬 채팅 unread 구독 시작:", dest);
+
+    subscribeDestination(dest, (payload) => {
+      // backend에서 long 그대로 보내니까 string/number 둘 다 처리
+      const count = Number(payload);
+      console.log("💬 실시간 채팅 unread 수신:", count);
+      if (!Number.isNaN(count)) {
+        setChatUnreadCount(count);
+      }
+    });
+  }, [connected, isAuthenticated, user, subscribeDestination]);
 
   const isAdmin = user?.role === "ADMIN";
 
@@ -126,11 +200,9 @@ const Navbar = () => {
                   >
                     <div className="relative mr-1">
                       <i className="bi bi-bell text-lg"></i>
-                      {notificationUnreadCount > 0 && (
+                      {unreadCount > 0 && (
                         <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold">
-                          {notificationUnreadCount > 99
-                            ? "99+"
-                            : notificationUnreadCount}
+                          {unreadCount > 99 ? "99+" : unreadCount}
                         </span>
                       )}
                     </div>
