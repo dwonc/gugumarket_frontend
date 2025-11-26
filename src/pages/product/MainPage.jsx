@@ -27,6 +27,7 @@ const MainPage = () => {
     changeDistrict,
     changeSort,
     refetch,
+    resetFilters, // 🔥 추가
   } = useProducts();
 
   useEffect(() => {
@@ -39,7 +40,7 @@ const MainPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
+      <Navbar onHomeClick={resetFilters} />
 
       <ProductsSearch
         initialKeyword={params.keyword || ""}

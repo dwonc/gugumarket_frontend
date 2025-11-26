@@ -143,6 +143,14 @@ const Navbar = () => {
 
   const isAdmin = user?.role === "ADMIN";
 
+  const handleHomeClick = () => {
+    // 👉 항상 전체 카테고리 + 1페이지로 가고 싶을 때
+    navigate({
+      pathname: "/",
+      search: "?categoryId=0&page=0", // 네가 쓰는 기본값에 맞게 수정 (0이면 0으로)
+    });
+  };
+
   return (
     <>
       {/* Top Bar */}
@@ -214,7 +222,13 @@ const Navbar = () => {
       <nav className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <Link to="/" className="flex items-center space-x-3 group">
+            <Link
+              to="/"
+              onClick={() => {
+                onHomeClick && onHomeClick(); // 🔥 필터 초기화
+              }}
+              className="flex items-center space-x-3 group"
+            >
               <img
                 src="/images/gugumarket-logo.png"
                 alt="GUGU Market Logo"
@@ -238,6 +252,9 @@ const Navbar = () => {
             <div className="flex items-center space-x-8">
               <Link
                 to="/"
+                onClick={() => {
+                  onHomeClick && onHomeClick(); // 🔥 필터 초기화
+                }}
                 className="text-gray-700 hover:text-primary font-medium transition-colors"
               >
                 홈
