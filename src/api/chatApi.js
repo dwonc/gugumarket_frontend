@@ -1,67 +1,143 @@
-import api from "./axios";
+// src/api/chatApi.js
+import axios from "./axios";
 
 const chatApi = {
   /**
    * 채팅방 생성 또는 조회
-   * POST /api/chat/rooms
+   * @param {number} productId - 상품 ID
+   * @returns {Promise}
    */
   createOrGetChatRoom: async (productId) => {
-    const response = await api.post("/api/chat/rooms", { productId });
-    return response.data;
+    try {
+      console.log("=== createOrGetChatRoom 호출 ===");
+      console.log("productId:", productId);
+
+      const response = await axios.post("/api/chat/rooms", {
+        productId: productId,
+      });
+
+      console.log("채팅방 생성/조회 응답:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("채팅방 생성/조회 실패:", error);
+      console.error("에러 응답:", error.response?.data);
+      throw error;
+    }
+  },
+
+  /**
+   * ✅ 특정 사용자와 채팅방 생성 또는 조회 (거래용)
+   * @param {number} productId - 상품 ID
+   * @param {number} otherUserId - 상대방 사용자 ID
+   * @returns {Promise}
+   */
+  createChatRoomWithUser: async (productId, otherUserId) => {
+    try {
+      console.log("=== createChatRoomWithUser 호출 ===");
+      console.log("productId:", productId, "otherUserId:", otherUserId);
+
+      const response = await axios.post("/api/chat/rooms/with-user", {
+        productId: productId,
+        otherUserId: otherUserId,
+      });
+
+      console.log("채팅방 생성/조회 응답:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("채팅방 생성/조회 실패:", error);
+      console.error("에러 응답:", error.response?.data);
+      throw error;
+    }
   },
 
   /**
    * 채팅방 목록 조회
-   * GET /api/chat/rooms
+   * @returns {Promise}
    */
   getChatRoomList: async () => {
-    const response = await api.get("/api/chat/rooms");
-    return response.data;
+    try {
+      const response = await axios.get("/api/chat/rooms");
+      return response.data;
+    } catch (error) {
+      console.error("채팅방 목록 조회 실패:", error);
+      throw error;
+    }
   },
 
   /**
    * 채팅방 상세 조회
-   * GET /api/chat/rooms/:chatRoomId
+   * @param {number} chatRoomId - 채팅방 ID
+   * @returns {Promise}
    */
   getChatRoom: async (chatRoomId) => {
-    const response = await api.get(`/api/chat/rooms/${chatRoomId}`);
-    return response.data;
+    try {
+      const response = await axios.get(`/api/chat/rooms/${chatRoomId}`);
+      return response.data;
+    } catch (error) {
+      console.error("채팅방 조회 실패:", error);
+      throw error;
+    }
   },
 
   /**
-   * 채팅방의 메시지 목록 조회
-   * GET /api/chat/rooms/:chatRoomId/messages
+   * 메시지 목록 조회
+   * @param {number} chatRoomId - 채팅방 ID
+   * @returns {Promise}
    */
   getMessages: async (chatRoomId) => {
-    const response = await api.get(`/api/chat/rooms/${chatRoomId}/messages`);
-    return response.data;
+    try {
+      const response = await axios.get(
+        `/api/chat/rooms/${chatRoomId}/messages`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("메시지 목록 조회 실패:", error);
+      throw error;
+    }
   },
 
   /**
    * 메시지 읽음 처리
-   * PATCH /api/chat/rooms/:chatRoomId/read
+   * @param {number} chatRoomId - 채팅방 ID
+   * @returns {Promise}
    */
   markMessagesAsRead: async (chatRoomId) => {
-    const response = await api.patch(`/api/chat/rooms/${chatRoomId}/read`);
-    return response.data;
+    try {
+      const response = await axios.patch(`/api/chat/rooms/${chatRoomId}/read`);
+      return response.data;
+    } catch (error) {
+      console.error("메시지 읽음 처리 실패:", error);
+      throw error;
+    }
   },
 
   /**
    * 총 읽지 않은 메시지 수 조회
-   * GET /api/chat/unread-count
+   * @returns {Promise}
    */
   getTotalUnreadCount: async () => {
-    const response = await api.get("/api/chat/unread-count");
-    return response.data;
+    try {
+      const response = await axios.get("/api/chat/unread-count");
+      return response.data;
+    } catch (error) {
+      console.error("읽지 않은 메시지 수 조회 실패:", error);
+      throw error;
+    }
   },
 
   /**
    * 채팅방 삭제
-   * DELETE /api/chat/rooms/:chatRoomId
+   * @param {number} chatRoomId - 채팅방 ID
+   * @returns {Promise}
    */
   deleteChatRoom: async (chatRoomId) => {
-    const response = await api.delete(`/api/chat/rooms/${chatRoomId}`);
-    return response.data;
+    try {
+      const response = await axios.delete(`/api/chat/rooms/${chatRoomId}`);
+      return response.data;
+    } catch (error) {
+      console.error("채팅방 삭제 실패:", error);
+      throw error;
+    }
   },
 };
 
