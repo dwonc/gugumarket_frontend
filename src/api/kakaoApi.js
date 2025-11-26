@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "./axios";
 
 const KAKAO_CLIENT_ID = "15357c9bee4652654d7745794e66a1c1";
 const KAKAO_REDIRECT_URI = "http://localhost:5173/auth/kakao";
@@ -12,7 +12,7 @@ export const kakaoApi = {
 
   // 카카오 로그인 콜백 처리 (백엔드로 code 전송)
   kakaoCallback: async (code) => {
-    const response = await axios.get(
+    const response = await api.get(
       `http://localhost:8080/api/auth/kakao/callback`,
       {
         params: { code },

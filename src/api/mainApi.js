@@ -10,7 +10,7 @@ import api from "./axios";
  */
 export const getMainPageData = async (params = {}) => {
   try {
-    const response = await api.get("/api/main", { params });
+    const response = await api.get("/main", { params });
     return response.data;
   } catch (error) {
     console.error("메인 페이지 데이터 조회 실패:", error);
@@ -24,7 +24,7 @@ export const getMainPageData = async (params = {}) => {
  */
 export const toggleProductLike = async (productId) => {
   try {
-    const response = await api.post(`/api/products/${productId}/like`);
+    const response = await api.post(`/products/${productId}/like`);
     return response.data;
   } catch (error) {
     console.error("찜하기 처리 실패:", error);
@@ -40,7 +40,7 @@ export const getProductList = async (params = {}) => {
       requestParams.sort = `${params.sort[0]},${params.sort[1]}`;
     }
 
-    const response = await api.get("/api/products/list", {
+    const response = await api.get("/products/list", {
       params: requestParams,
     });
     return response.data;
@@ -55,7 +55,7 @@ export const getProductList = async (params = {}) => {
  */
 export const getDistricts = async () => {
   try {
-    const response = await api.get("/api/districts");
+    const response = await api.get("/districts");
     return response.data;
   } catch (error) {
     console.error("지역 목록 조회 실패:", error);
@@ -69,7 +69,7 @@ export const getDistricts = async () => {
  */
 export const getCategories = async (includeCount = false) => {
   try {
-    const response = await api.get("/api/categories", {
+    const response = await api.get("/categories", {
       params: { includeCount },
     });
     return response.data;

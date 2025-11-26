@@ -5,7 +5,7 @@ const PRODUCTION_API_URL = "/api/proxy";
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || PRODUCTION_API_URL,
-    timeout: 10000,
+    timeout: 31000,
     headers: {
         "Content-Type": "application/json",
     },
@@ -106,8 +106,9 @@ api.interceptors.response.use(
 
             try {
                 const { refreshToken } = useAuthStore.getState();
+                // ⚠️ 수정: /api 제거 (baseURL에 /api/proxy가 이미 포함됨)
                 const response = await axios.post(
-                    `${api.defaults.baseURL}/api/auth/refresh`,
+                    `${api.defaults.baseURL}/auth/refresh`,
                     {},
                     {
                         headers: { Authorization: `Bearer ${refreshToken}` },

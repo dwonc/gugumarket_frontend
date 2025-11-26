@@ -3,7 +3,7 @@ import api from "./axiosConfig";
 const S3_HOST = import.meta.env.VITE_S3_HOST;
 // 상품 목록 조회
 export const getProducts = async (page = 0) => {
-  const response = await api.get("/api/products", {
+  const response = await api.get("/products", {
     params: { page },
   });
   return response.data;
@@ -11,13 +11,13 @@ export const getProducts = async (page = 0) => {
 
 // 상품 상세 조회
 export const fetchProduct = async (productId) => {
-  const response = await api.get(`/api/products/${productId}`);
+  const response = await api.get(`/products/${productId}`);
   return response.data;
 };
 
 // 상품 등록
 export const createProduct = async (formData) => {
-  const response = await api.post("/api/products", formData, {
+  const response = await api.post("/products", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -27,7 +27,7 @@ export const createProduct = async (formData) => {
 
 // 상품 수정
 export const updateProduct = async (productId, formData) => {
-  const response = await api.put(`/api/products/${productId}`, formData, {
+  const response = await api.put(`/products/${productId}`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -37,13 +37,13 @@ export const updateProduct = async (productId, formData) => {
 
 // 상품 삭제
 export const deleteProduct = async (productId) => {
-  const response = await api.delete(`/api/products/${productId}`);
+  const response = await api.delete(`/products/${productId}`);
   return response.data;
 };
 
 // 상품 상태 변경
 export const updateProductStatus = async (productId, status) => {
-  const response = await api.patch(`/api/products/${productId}/status`, {
+  const response = await api.patch(`/products/${productId}/status`, {
     status,
   });
   return response.data;
@@ -51,7 +51,7 @@ export const updateProductStatus = async (productId, status) => {
 
 // 좋아요 토글
 export const toggleLike = async (productId) => {
-  const response = await api.post(`/api/products/${productId}/like`);
+  const response = await api.post(`/products/${productId}/like`);
   return response.data;
 };
 
@@ -60,7 +60,7 @@ export const uploadImage = async (file) => {
     const formData = new FormData();
     formData.append("image", file);
 
-    const response = await api.post("/api/products/upload/image", formData, {
+    const response = await api.post("/products/upload/image", formData, {
         headers: {
             "Content-Type": "multipart/form-data",
         },
@@ -85,7 +85,7 @@ export const uploadMultipleImages = async (files) => {
         formData.append("images", file);
     });
 
-    const response = await api.post("/api/products/upload/images", formData, {
+    const response = await api.post("/products/upload/images", formData, {
         headers: {
             "Content-Type": "multipart/form-data",
         },

@@ -2,10 +2,19 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "env": {
+    "BACKEND_URL": "http://ggserver-env.eba-xtmi9xja.ap-southeast-2.elasticbeanstalk.com"
+  },
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     {
       "source": "/api/proxy/:path*",
-      "destination": "/api/proxy"
+      "destination": "/api/proxy/[...path]"
     },
     {
       "source": "/(.*)",

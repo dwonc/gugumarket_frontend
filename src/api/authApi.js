@@ -1,25 +1,25 @@
 import api from "./axios";
 
 export const authApi = {
-  login: (credentials) => api.post("/api/auth/login", credentials),
+  login: (credentials) => api.post("/auth/login", credentials),
 
-  logout: () => api.post("/api/auth/logout"),
+  logout: () => api.post("/auth/logout"),
 
   refreshToken: (refreshToken) =>
     api.post(
-      "/api/auth/refresh",
+      "/auth/refresh",
       {},
       {
         headers: { Authorization: `Bearer ${refreshToken}` },
       }
     ),
 
-  getCurrentUser: () => api.get("/api/auth/me"),
+  getCurrentUser: () => api.get("/auth/me"),
 
   // ✅ 카카오 콜백 함수 추가
   kakaoCallback: async (code) => {
     console.log("🚀 authApi.kakaoCallback 호출:", code);
-    const response = await api.get(`/api/auth/kakao/callback?code=${code}`);
+    const response = await api.get(`/auth/kakao/callback?code=${code}`);
     console.log("📥 authApi.kakaoCallback 응답:", response);
     return response;
   },
@@ -37,11 +37,11 @@ export const authApi = {
       params.append("password", data.password);
     }
 
-    const response = await api.post("/api/auth/complete-profile", params, {
+    const response = await api.post("/auth/complete-profile", params, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-    });
+    })
 
     console.log("📥 authApi.completeProfile 응답:", response);
     return response;
