@@ -1,23 +1,28 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import Button from "../common/Button"; // Button 컴포넌트 사용을 위해 import
-import handleStartChat from "../../utils/handleStartChat";
+import Button from "../common/Button"; // 필요 없으면 제거해도 됨
+import { handleStartChatModal } from "../../utils/handleStartChatModal";
+import ChatRoomModal from "../chat/ChatRoomModal"; // ✅ 경로는 구조에 맞게 조정
 
-// 이 코드는 MyPage.jsx에서 사용되던 renderPurchases 함수를 컴포넌트화한 것입니다.
-// Props: purchases, formatPrice, formatDate, getStatusBadge, getProductImageUrl
 const MyPurchases = ({
   purchases,
   formatPrice,
   formatDate,
   getStatusBadge,
   getProductImageUrl,
-  navigate, // ✅ 추가
-  isAuthenticated, // ✅ 추가
+  navigate, // ✅ 부모에서 넘겨줌 (MyPage에서 useNavigate로)
+  isAuthenticated, // ✅ 로그인 여부
 }) => {
-  // 이전에 MyPage.jsx에서 정의된 NO_IMAGE_PLACEHOLDER를 사용합니다.
   const NO_IMAGE_PLACEHOLDER = getProductImageUrl("");
 
-  // 모든 버튼의 Link 클릭 방지 핸들러
+  const [chatRoomId, setChatRoomId] = useState(null);
+  const [isChatOpen, setChatOpen] = useState(false);
+
+  const openChatModal = (roomId) => {
+    setChatRoomId(roomId);
+    setChatOpen(true);
+  };
+
   const preventLinkDefault = (e) => e.preventDefault();
 
   return (
@@ -28,7 +33,6 @@ const MyPurchases = ({
           purchases.map((transaction) => {
             const badge = getStatusBadge(transaction.status, false);
             return (
-              // Link로 감싸서 거래 상세 페이지로 이동
               <Link
                 to={`/transactions/${transaction.transactionId}`}
                 key={transaction.transactionId}
@@ -36,7 +40,6 @@ const MyPurchases = ({
               >
                 <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all">
                   <div className="flex gap-4 items-center">
-                    {/* 상품 이미지 */}
                     <img
                       src={getProductImageUrl(transaction.productImage) || null}
                       alt={transaction.productTitle}
@@ -67,37 +70,37 @@ const MyPurchases = ({
                     </div>
 
                     <div className="flex flex-col justify-between items-end h-full">
-                      {/* 상태 배지 */}
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-medium ${badge.class}`}
                       >
                         {badge.text}
                       </span>
 
-                      {/* 상태에 따른 액션 버튼 */}
                       <div className="mt-3 space-y-2">
                         {transaction.status === "COMPLETED" && (
                           <button
                             className="text-gray-600 hover:text-primary text-sm w-full text-right"
                             onClick={(e) => {
-                              e.preventDefault();
-                              handleStartChat(
+                              e.preventDefault(); // Link 이동 막고
+                              handleStartChatModal(
                                 transaction.productId,
-                                navigate,
-                                isAuthenticated
+                                isAuthenticated,
+                                openChatModal, // 모달 열기 콜백
+                                navigate // 로그인 필요 시 사용
                               );
                             }}
                           >
                             <i className="bi bi-chat-dots mr-1"></i>문의하기
                           </button>
                         )}
+
                         {transaction.status === "PENDING" && (
                           <button
                             className="text-blue-600 hover:text-blue-800 text-sm w-full text-right font-medium"
                             onClick={preventLinkDefault}
                           >
-                            <i className="bi bi-credit-card mr-1"></i>입금 정보
-                            보기
+                            <i className="bi bi-credit-card mr-1"></i>
+                            입금 정보 보기
                           </button>
                         )}
                       </div>
@@ -108,13 +111,19 @@ const MyPurchases = ({
             );
           })
         ) : (
-          /* Empty State */
           <div className="text-center py-16">
             <i className="bi bi-bag-x text-6xl text-gray-300 mb-4"></i>
             <p className="text-gray-500 text-lg">구매내역이 없습니다.</p>
           </div>
         )}
       </div>
+
+      {/* 🔥 채팅 모달 */}
+      <ChatRoomModal
+        isOpen={isChatOpen}
+        chatRoomId={chatRoomId}
+        onClose={() => setChatOpen(false)}
+      />
     </div>
   );
 };

@@ -26,7 +26,8 @@ import ProductMetaTags from "../../components/product/ProductMetaTags";
 import UserLevelBadge from "../../components/user/UserLevelBadge";
 // 🎯 신고 Modal import 추가
 import ReportModal from "../../components/report/ReportModal";
-import handleStartChat from "../../utils/handleStartChat";
+import { handleStartChatModal } from "../../utils/handleStartChatModal";
+import ChatRoomModal from "../../components/chat/ChatRoomModal";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -54,6 +55,13 @@ const ProductDetailPage = () => {
   const [sellerLevelInfo, setSellerLevelInfo] = useState(null);
   // 🎯 신고 Modal state 추가
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [chatRoomId, setChatRoomId] = useState(null);
+  const [isChatOpen, setChatOpen] = useState(false);
+
+  const openChatModal = (roomId) => {
+    setChatRoomId(roomId);
+    setChatOpen(true);
+  };
 
   // 🔥 판매자 등급 정보 로드 (useCallback으로 메모이제이션)
   const loadSellerLevel = useCallback(async (sellerId) => {
@@ -223,10 +231,11 @@ const ProductDetailPage = () => {
                 {!isSeller && (
                   <button
                     onClick={() =>
-                      handleStartChat(
+                      handleStartChatModal(
                         product.productId,
-                        navigate,
-                        isAuthenticated
+                        isAuthenticated,
+                        openChatModal,
+                        navigate
                       )
                     }
                     className="mt-3 w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-secondary transition-colors text-sm font-medium"
@@ -274,6 +283,12 @@ const ProductDetailPage = () => {
         onClose={() => setIsReportModalOpen(false)}
         productId={product.productId}
         onSuccess={handleReportSuccess}
+      />
+
+      <ChatRoomModal
+        isOpen={isChatOpen}
+        chatRoomId={chatRoomId}
+        onClose={() => setChatOpen(false)}
       />
 
       <Footer />

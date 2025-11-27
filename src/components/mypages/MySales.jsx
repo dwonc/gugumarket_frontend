@@ -1,7 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
-import handleStartChat from "../../utils/handleStartChat";
+import { handleStartChatModal } from "../../utils/handleStartChatModal";
+import ChatRoomModal from "../chat/ChatRoomModal"; // ✅ 경로는 구조에 맞게 조정
+import { useState } from "react";
 
 // 이 코드는 MyPage.jsx에서 사용되던 renderSales 함수를 컴포넌트화한 것입니다.
 // Props: sales, products, apiUser, formatPrice, formatDate, getStatusBadge, getProductImageUrl, confirmPayment, navigate
@@ -19,6 +21,14 @@ const MySales = ({
 }) => {
   const NO_IMAGE_PLACEHOLDER = getProductImageUrl("");
 
+  const [chatRoomId, setChatRoomId] = useState(null);
+  const [isChatOpen, setChatOpen] = useState(false);
+
+  const openChatModal = (roomId) => {
+    setChatRoomId(roomId);
+    setChatOpen(true);
+  };
+
   // 1. 거래가 진행 중이거나 완료된 상품 (Transaction) 목록에서 Product ID를 추출
   const transactionProductIds = new Set((sales || []).map((t) => t.productId));
 
@@ -35,6 +45,7 @@ const MySales = ({
     buyerName: "판매 중",
     depositorName: null,
     transactionDate: null, // 거래일은 null
+    buyerId: null,
     createdDate: p.createdDate, // 등록일 사용
 
     // 상품 정보 필드
@@ -172,10 +183,25 @@ const MySales = ({
                             className="text-gray-600 hover:text-primary text-sm w-full text-right"
                             onClick={(e) => {
                               e.preventDefault();
-                              handleStartChat(
+
+                              const otherUserId =
+                                item.buyerId ??
+                                item.buyerUserId ??
+                                item.buyer?.userId ??
+                                null;
+
+                              console.log("판매내역 문의하기", {
+                                productId: item.productId,
+                                otherUserId,
+                                item,
+                              });
+
+                              handleStartChatModal(
                                 item.productId,
+                                isAuthenticated,
+                                openChatModal,
                                 navigate,
-                                isAuthenticated
+                                otherUserId
                               );
                             }}
                           >
@@ -205,6 +231,12 @@ const MySales = ({
           </div>
         )}
       </div>
+      {/* 🔥 채팅 모달 */}
+      <ChatRoomModal
+        isOpen={isChatOpen}
+        chatRoomId={chatRoomId}
+        onClose={() => setChatOpen(false)}
+      />
     </div>
   );
 };

@@ -1,21 +1,13 @@
 import chatApi from "../api/chatApi";
 
-/**
- * 채팅 시작 공통 함수
- * - 채팅방 생성 또는 기존 채팅방 조회
- * - 채팅방 페이지로 이동
- *
- * @param {number} productId - 상품 ID
- * @param {function} navigate - React Router navigate 함수
- * @param {boolean} isAuthenticated - 인증 여부
- */
-export const handleStartChat = async (
+export const handleStartChatModal = async (
   productId,
+  isAuthenticated,
+  openChatModal,
   navigate,
-  isAuthenticated = true
+  otherUserId // ✨ 상대 유저 ID (옵션)
 ) => {
   try {
-    // 인증 확인
     if (!isAuthenticated) {
       if (
         window.confirm("로그인이 필요합니다. 로그인 페이지로 이동하시겠습니까?")
@@ -25,14 +17,22 @@ export const handleStartChat = async (
       return;
     }
 
-    // 채팅방 생성 또는 조회
-    const response = await chatApi.createOrGetChatRoom(productId);
+    let response;
+
+    if (otherUserId) {
+      // ✅ 판매내역에서: 상품 + 상대방 기준
+      response = await chatApi.createOrGetChatRoomWithUser(
+        productId,
+        otherUserId
+      );
+    } else {
+      // ✅ 상품 상세에서: 현재 유저(구매자) → 상품 판매자
+      response = await chatApi.createOrGetChatRoom(productId);
+    }
 
     if (response.success) {
       const chatRoomId = response.chatRoom.chatRoomId;
-
-      // 채팅방 페이지로 이동
-      navigate(`/chat/${chatRoomId}`);
+      openChatModal(chatRoomId);
     } else {
       alert(response.message || "채팅방을 생성하는데 실패했습니다.");
     }
@@ -50,4 +50,4 @@ export const handleStartChat = async (
   }
 };
 
-export default handleStartChat;
+export default handleStartChatModal;
