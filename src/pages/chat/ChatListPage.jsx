@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import chatApi from "../../api/chatApi";
 import useAuth from "../../hooks/useAuth";
+import useWebSocket from "../../hooks/useWebSocket";
 import Navbar from "../../components/common/Navbar";
 import Footer from "../../components/common/Footer";
 import Loading from "../../components/common/Loading";
@@ -27,28 +28,21 @@ const getProductImageUrl = (imagePath) => {
 const ChatListPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const { connected, subscribeDestination } = useWebSocket();
 
   const [chatRooms, setChatRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 🆕 모달 상태
   const [selectedChatRoomId, setSelectedChatRoomId] = useState(null);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
+  // ✅ 이전 카운트 저장 (비교용)
+  const prevCountRef = useRef(null);
+  // ✅ debounce용 타이머
+  const debounceTimerRef = useRef(null);
 
-    fetchChatRooms();
-  }, [isAuthenticated, navigate]);
-
-  const fetchChatRooms = async () => {
-    setLoading(true);
-    setError(null);
-
+  const fetchChatRooms = useCallback(async () => {
     try {
       const response = await chatApi.getChatRoomList();
       if (response.success) {
@@ -59,10 +53,65 @@ const ChatListPage = () => {
     } catch (err) {
       console.error("채팅방 목록 조회 실패:", err);
       setError("채팅방 목록을 불러오는 중 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, []);
+
+  // 초기 로드
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    const loadInitial = async () => {
+      setLoading(true);
+      await fetchChatRooms();
+      setLoading(false);
+    };
+
+    loadInitial();
+  }, [isAuthenticated, navigate, fetchChatRooms]);
+
+  // ✅ WebSocket 구독: 실시간 채팅 알림 (debounce 적용)
+  useEffect(() => {
+    if (!connected || !isAuthenticated || !user?.userId) return;
+
+    const unsubChat = subscribeDestination(
+      `/topic/chat/unread-count/${user.userId}`,
+      (payload) => {
+        const count = Number(payload);
+
+        // ✅ 값이 변경되었을 때만 처리
+        if (prevCountRef.current !== count) {
+          console.log("📨 채팅 카운트 변경:", prevCountRef.current, "→", count);
+          prevCountRef.current = count;
+
+          // ✅ debounce: 500ms 내에 여러 번 오면 마지막 것만 실행
+          if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+          }
+
+          debounceTimerRef.current = setTimeout(() => {
+            console.log("🔄 채팅방 목록 새로고침");
+            fetchChatRooms();
+          }, 500);
+        }
+      }
+    );
+
+    return () => {
+      if (typeof unsubChat === "function") unsubChat();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [
+    connected,
+    isAuthenticated,
+    user?.userId,
+    subscribeDestination,
+    fetchChatRooms,
+  ]);
 
   const formatDate = (dateTimeString) => {
     if (!dateTimeString) return "";
@@ -90,7 +139,6 @@ const ChatListPage = () => {
 
   const getUnreadCount = (chatRoom) => {
     if (!user) return 0;
-
     if (user.userId === chatRoom.sellerId) {
       return chatRoom.sellerUnreadCount || 0;
     } else {
@@ -100,7 +148,6 @@ const ChatListPage = () => {
 
   const getOpponentName = (chatRoom) => {
     if (!user) return "";
-
     if (user.userId === chatRoom.sellerId) {
       return chatRoom.buyerNickname || "구매자";
     } else {
@@ -108,30 +155,23 @@ const ChatListPage = () => {
     }
   };
 
-  // 🆕 채팅방 클릭 핸들러 (모달 열기)
   const handleChatRoomClick = (chatRoomId) => {
     setSelectedChatRoomId(chatRoomId);
     setIsChatModalOpen(true);
   };
 
-  // 🆕 모달 닫기 핸들러
   const handleCloseModal = () => {
     setIsChatModalOpen(false);
     setSelectedChatRoomId(null);
-    // 모달 닫힐 때 채팅방 목록 새로고침 (읽음 표시 반영)
     fetchChatRooms();
   };
 
-  // 🔥 채팅방 삭제 핸들러
   const handleDeleteChatRoom = async (e, chatRoomId) => {
-    e.stopPropagation(); // 부모 div 클릭(채팅방 이동) 막기
-
+    e.stopPropagation();
     if (!window.confirm("이 채팅방을 삭제하시겠습니까?")) return;
 
     try {
-      const res = await chatApi.deleteChatRoom(chatRoomId);
-
-      // 프론트 목록에서 해당 채팅방 제거
+      await chatApi.deleteChatRoom(chatRoomId);
       setChatRooms((prev) =>
         prev.filter((room) => room.chatRoomId !== chatRoomId)
       );
@@ -158,7 +198,6 @@ const ChatListPage = () => {
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">채팅</h1>
@@ -168,12 +207,10 @@ const ChatListPage = () => {
           </div>
         </div>
 
-        {/* Error Message */}
         {error && (
           <ErrorMessage message={error} type="error" className="mb-6" />
         )}
 
-        {/* Chat Room List */}
         {chatRooms.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
             <i className="bi bi-chat-dots text-6xl text-gray-300 mb-4"></i>
@@ -197,7 +234,6 @@ const ChatListPage = () => {
                   className="p-4 hover:bg-gray-50 cursor-pointer transition-all"
                 >
                   <div className="flex items-center gap-4">
-                    {/* 상품 이미지 */}
                     <img
                       src={getProductImageUrl(chatRoom.productImage)}
                       alt={chatRoom.productTitle}
@@ -207,7 +243,6 @@ const ChatListPage = () => {
                       }}
                     />
 
-                    {/* 채팅방 정보 */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <h3 className="text-sm font-semibold text-gray-900 truncate">
@@ -231,8 +266,6 @@ const ChatListPage = () => {
                               {unreadCount}
                             </span>
                           )}
-
-                          {/* 🗑 삭제 버튼 */}
                           <button
                             onClick={(e) =>
                               handleDeleteChatRoom(e, chatRoom.chatRoomId)
@@ -253,7 +286,6 @@ const ChatListPage = () => {
         )}
       </div>
 
-      {/* 🆕 채팅방 모달 */}
       <ChatRoomModal
         chatRoomId={selectedChatRoomId}
         isOpen={isChatModalOpen}
