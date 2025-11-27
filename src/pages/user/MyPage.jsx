@@ -88,6 +88,7 @@ const MyPage = () => {
     }, [isAuthenticated, location]);
 
     // 마이페이지 데이터를 서버에서 가져오는 함수
+    //useCallback=함수를 메모이제이션(기억)해서 불필요한 재생성을 방지
     const fetchData = useCallback(async () => {
         setLoading(true); //로딩 시작
         setError(null); //에러 초기화

@@ -6,7 +6,9 @@ export const userApi = {
     // username을 파라미터로 받아서 해당 아이디가 이미 사용 중인지 확인
     checkUsername: async (username) => {
         // GET 요청으로 쿼리 파라미터(?username=...)로 전달
+        //파라미터=함수에 전달하는 입력값
         const response = await api.get("/api/users/check-username", {
+            //params=?뒤의 데이터 (ex.?username=john123)
             params: { username },
         });
 
@@ -15,6 +17,7 @@ export const userApi = {
 
     // ✅ 회원가입
     // 회원가입에 필요한 모든 데이터를 받아서 서버로 전송
+    //async=비동기 작업,작업이 완료될 때까지 기다리지 않고 다음 코드를 먼저 실행하는 방식
     signup: async (userData) => {
         // POST 요청으로 사용자 데이터를 body에 담아서 전송
         const response = await api.post("/api/users/signup", userData);

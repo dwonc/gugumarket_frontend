@@ -1,4 +1,4 @@
-import { create } from "zustand"; // Zustand 스토어를 생성하는 핵심 함수 import
+import { create } from "zustand"; // Zustand 스토어를 생성하는 핵심 함수 import Zustand=전역 상태 관리 라이브러리 - 여러 컴포넌트에서 공유하는 데이터를 관리하는 도구
 import { persist } from "zustand/middleware"; // 스토어 상태를 브라우저 저장소에 유지시키는 미들웨어 import
 import { userApi } from "../api/userApi"; // 사용자 정보 조회 관련 API 함수 import
 // import useAuthStore from "./authStore"; // 필요한 경우 토큰 갱신 로직을 위해 사용 가능 (주석 처리됨)
