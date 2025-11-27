@@ -1,34 +1,27 @@
-//구매자용 버튼들(찜하기, 구매하기)
-
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../common/Button";
 
-const BuyerActionButtons = ({ product, onLikeToggle }) => {
+const BuyerActionButtons = ({ product, onLikeToggle, isLiked, likeCount }) => {
   const navigate = useNavigate();
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
 
-  useEffect(() => {
-    if (product) {
-      setIsLiked(product.isLiked || false);
-      setLikeCount(product.likeCount || 0);
-    }
-  }, [product]);
+  if (!product) return null;
 
-  const handleLikeToggle = async () => {
+  // prop이 안 들어오면 product 객체에서 fallback
+  const effectiveIsLiked =
+    typeof isLiked === "boolean" ? isLiked : product.isLiked;
+
+  const effectiveLikeCount =
+    typeof likeCount === "number" ? likeCount : product.likeCount || 0;
+
+  const handleLikeClick = async () => {
     try {
-      const result = await onLikeToggle(product.productId);
-      if (result) {
-        setIsLiked(result.isLiked);
-        setLikeCount(result.likeCount);
-      }
+      // store 쪽에서 알아서 상태를 변경해주고,
+      // 여기서는 그냥 트리거만 눌러준다
+      await onLikeToggle?.(product.productId);
     } catch (error) {
       alert(`오류가 발생했습니다: ${error.message || error}`);
     }
   };
-
-  if (!product) return null;
 
   return (
     <>
@@ -52,10 +45,10 @@ const BuyerActionButtons = ({ product, onLikeToggle }) => {
       <div className="flex gap-3">
         {/* 찜하기 버튼 */}
         <button
-          onClick={handleLikeToggle}
+          onClick={handleLikeClick}
           disabled={product.status === "SOLD_OUT"}
           className={`flex-1 border-2 font-bold py-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${
-            isLiked
+            effectiveIsLiked
               ? "bg-red-500 text-white border-red-500"
               : "bg-white text-primary border-primary hover:bg-primary hover:text-white"
           } ${
@@ -64,12 +57,12 @@ const BuyerActionButtons = ({ product, onLikeToggle }) => {
         >
           <i
             className={`text-xl ${
-              isLiked ? "bi bi-heart-fill" : "bi bi-heart"
+              effectiveIsLiked ? "bi bi-heart-fill" : "bi bi-heart"
             }`}
           ></i>
-          <span>{isLiked ? "찜 취소" : "찜하기"}</span>
+          <span>{effectiveIsLiked ? "찜 취소" : "찜하기"}</span>
           <span className="ml-1 px-2 py-0.5 bg-black/10 rounded-full text-sm">
-            {likeCount}
+            {effectiveLikeCount}
           </span>
         </button>
 

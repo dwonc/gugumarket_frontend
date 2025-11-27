@@ -28,6 +28,7 @@ import UserLevelBadge from "../../components/user/UserLevelBadge";
 import ReportModal from "../../components/report/ReportModal";
 import { handleStartChatModal } from "../../utils/handleStartChatModal";
 import ChatRoomModal from "../../components/chat/ChatRoomModal";
+import useLikeStore from "../../stores/likeStore";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -43,6 +44,12 @@ const ProductDetailPage = () => {
     updateProductStatus,
     deleteProduct,
   } = productStore;
+
+  const {
+    isLiked: isLikedInStore,
+    getLikeCount,
+    toggleLike: toggleLikeInStore,
+  } = useLikeStore();
 
   const { isSeller, isAdmin, canEdit } = useProductPermission(
     isAuthenticated,
@@ -133,13 +140,19 @@ const ProductDetailPage = () => {
   };
 
   // 🎯 찜하기 핸들러 (인증 체크 추가)
-  const handleLikeToggle = () => {
+  const handleLikeToggle = async () => {
     if (!isAuthenticated) {
       alert("로그인이 필요합니다.");
       navigate("/login");
       return;
     }
-    toggleLike(product.productId);
+
+    try {
+      await toggleLikeInStore(product.productId); // ✅ likeStore 사용
+    } catch (e) {
+      console.error("찜하기 실패:", e);
+      alert("찜하기 처리 중 오류가 발생했습니다.");
+    }
   };
 
   // 🎯 신고하기 핸들러 (ReportModal 사용)
@@ -259,9 +272,11 @@ const ProductDetailPage = () => {
                 isSeller={isSeller}
                 onStatusSave={handleStatusSave}
                 onDelete={handleDelete}
-                onLikeToggle={handleLikeToggle} /* ✅ 수정: wrapper 함수 사용 */
+                onLikeToggle={handleLikeToggle}
                 onShare={handleShare}
                 onReport={handleReport}
+                isLiked={isLikedInStore(product.productId)} // ✅ likeStore 상태 전달
+                likeCount={getLikeCount(product.productId)} // ✅ likeStore 카운트 전달
               />
             </div>
           </div>

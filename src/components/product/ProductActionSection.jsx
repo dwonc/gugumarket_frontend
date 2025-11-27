@@ -12,8 +12,16 @@ const ProductActionSection = ({
   onLikeToggle,
   onShare,
   onReport, // ✅ 신고하기 핸들러 추가
+  isLiked, // ✅ 추가
+  likeCount, // ✅ 추가
 }) => {
   if (!product) return null;
+
+  const effectiveIsLiked =
+    typeof isLiked === "boolean" ? isLiked : product.isLiked;
+
+  const effectiveLikeCount =
+    typeof likeCount === "number" ? likeCount : product.likeCount || 0;
 
   return (
     <>
@@ -28,7 +36,12 @@ const ProductActionSection = ({
             onDelete={onDelete}
           />
         ) : (
-          <BuyerActionButtons product={product} onLikeToggle={onLikeToggle} />
+          <BuyerActionButtons
+            product={product}
+            onLikeToggle={onLikeToggle}
+            isLiked={effectiveIsLiked} // ✅ 여기 전달
+            likeCount={effectiveLikeCount} // ✅ 여기 전달
+          />
         )}
       </div>
 
