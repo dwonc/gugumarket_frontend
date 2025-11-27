@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useProductStore } from "../../stores/productStore";
 import useAuth from "../../hooks/useAuth";
 import useProductPermission from "../../hooks/useProductPermission";
+import useWebSocket from "../../hooks/useWebSocket"; // ✅ 추가
 import reportApi from "../../api/reportApi";
 import api from "../../api/axios";
 
@@ -24,7 +25,6 @@ import ProductDescription from "../../components/product/ProductDescription";
 import ShareModal from "../../components/product/ShareModal";
 import ProductMetaTags from "../../components/product/ProductMetaTags";
 import UserLevelBadge from "../../components/user/UserLevelBadge";
-// 🎯 신고 Modal import 추가
 import ReportModal from "../../components/report/ReportModal";
 import { handleStartChatModal } from "../../utils/handleStartChatModal";
 import ChatRoomModal from "../../components/chat/ChatRoomModal";
@@ -34,6 +34,9 @@ const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated = false, user = null } = useAuth() || {};
+
+  // ✅ WebSocket 훅 추가
+  const { connected, subscribeDestination } = useWebSocket();
 
   const productStore = useProductStore();
   const {
@@ -60,7 +63,6 @@ const ProductDetailPage = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportCount, setReportCount] = useState(0);
   const [sellerLevelInfo, setSellerLevelInfo] = useState(null);
-  // 🎯 신고 Modal state 추가
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [chatRoomId, setChatRoomId] = useState(null);
   const [isChatOpen, setChatOpen] = useState(false);
@@ -70,7 +72,7 @@ const ProductDetailPage = () => {
     setChatOpen(true);
   };
 
-  // 🔥 판매자 등급 정보 로드 (useCallback으로 메모이제이션)
+  // 판매자 등급 정보 로드
   const loadSellerLevel = useCallback(async (sellerId) => {
     try {
       const response = await api.get(`/api/users/${sellerId}/level`);
@@ -89,9 +91,7 @@ const ProductDetailPage = () => {
         .then((data) => {
           const productData = data.product || data;
           if (productData) {
-            // ✅ 신고 수 설정
             setReportCount(data.reportCount || 0);
-            // 🔥 판매자 등급 정보 불러오기
             if (productData.sellerId) {
               loadSellerLevel(productData.sellerId);
             }
@@ -102,6 +102,26 @@ const ProductDetailPage = () => {
         });
     }
   }, [id, fetchProduct, loadSellerLevel]);
+
+  // ✅ WebSocket 구독: 실시간 신고 카운트 (조건부 return 전에 위치!)
+  useEffect(() => {
+    if (!connected || !id) return;
+
+    const unsubReport = subscribeDestination(
+      `/topic/product/report-count/${id}`,
+      (payload) => {
+        const count = Number(payload);
+        if (!Number.isNaN(count)) {
+          console.log("🚨 신고 카운트 실시간 업데이트:", count);
+          setReportCount(count);
+        }
+      }
+    );
+
+    return () => {
+      if (typeof unsubReport === "function") unsubReport();
+    };
+  }, [connected, id, subscribeDestination]);
 
   // 상태 변경 핸들러
   const handleStatusSave = async (selectedStatus) => {
@@ -139,7 +159,7 @@ const ProductDetailPage = () => {
     setIsShareModalOpen(true);
   };
 
-  // 🎯 찜하기 핸들러 (인증 체크 추가)
+  // 찜하기 핸들러
   const handleLikeToggle = async () => {
     if (!isAuthenticated) {
       alert("로그인이 필요합니다.");
@@ -148,14 +168,14 @@ const ProductDetailPage = () => {
     }
 
     try {
-      await toggleLikeInStore(product.productId); // ✅ likeStore 사용
+      await toggleLikeInStore(product.productId);
     } catch (e) {
       console.error("찜하기 실패:", e);
       alert("찜하기 처리 중 오류가 발생했습니다.");
     }
   };
 
-  // 🎯 신고하기 핸들러 (ReportModal 사용)
+  // 신고하기 핸들러
   const handleReport = () => {
     if (!isAuthenticated) {
       alert("로그인이 필요합니다.");
@@ -165,7 +185,7 @@ const ProductDetailPage = () => {
     setIsReportModalOpen(true);
   };
 
-  // 🎯 신고 성공 후 핸들러
+  // 신고 성공 후 핸들러
   const handleReportSuccess = () => {
     fetchProduct(id);
   };
@@ -226,7 +246,7 @@ const ProductDetailPage = () => {
           {/* Right: Product Info */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-lg p-8">
-              {/* 🔥 판매자 정보 + 등급 */}
+              {/* 판매자 정보 + 등급 */}
               <div className="mb-6 pb-6 border-b">
                 <div className="flex items-center justify-between">
                   <div>
@@ -240,7 +260,6 @@ const ProductDetailPage = () => {
                   )}
                 </div>
 
-                {/* ✅ 판매자에게 문의하기 버튼 추가 */}
                 {!isSeller && (
                   <button
                     onClick={() =>
@@ -275,8 +294,8 @@ const ProductDetailPage = () => {
                 onLikeToggle={handleLikeToggle}
                 onShare={handleShare}
                 onReport={handleReport}
-                isLiked={isLikedInStore(product.productId)} // ✅ likeStore 상태 전달
-                likeCount={getLikeCount(product.productId)} // ✅ likeStore 카운트 전달
+                isLiked={isLikedInStore(product.productId)}
+                likeCount={getLikeCount(product.productId)}
               />
             </div>
           </div>
@@ -292,7 +311,6 @@ const ProductDetailPage = () => {
         product={product}
       />
 
-      {/* 🎯 신고 Modal 추가 */}
       <ReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
