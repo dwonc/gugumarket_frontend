@@ -31,7 +31,7 @@ import PaymentSuccessPage from "../pages/payment/PaymentSuccessPage";
 import PaymentCancelPage from "../pages/payment/PaymentCancelPage";
 import PaymentFailPage from "../pages/payment/PaymentFailPage";
 import ChatListPage from "../pages/chat/ChatListPage";
-import ChatRoomPage from "../pages/chat/ChatRoomPage";
+import ChatRoomModal from "../components/chat/ChatRoomModal";
 
 const router = createBrowserRouter([
   // Public Routes
@@ -88,7 +88,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/chat/:chatRoomId",
-    element: <ChatRoomPage />,
+    element: <ChatRoomModal />,
   },
 
   // Private Routes (로그인 필요)

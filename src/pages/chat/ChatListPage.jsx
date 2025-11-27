@@ -7,6 +7,7 @@ import Footer from "../../components/common/Footer";
 import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Button from "../../components/common/Button";
+import ChatRoomModal from "../../components/chat/ChatRoomModal";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -30,6 +31,10 @@ const ChatListPage = () => {
   const [chatRooms, setChatRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // 🆕 모달 상태
+  const [selectedChatRoomId, setSelectedChatRoomId] = useState(null);
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -103,6 +108,20 @@ const ChatListPage = () => {
     }
   };
 
+  // 🆕 채팅방 클릭 핸들러 (모달 열기)
+  const handleChatRoomClick = (chatRoomId) => {
+    setSelectedChatRoomId(chatRoomId);
+    setIsChatModalOpen(true);
+  };
+
+  // 🆕 모달 닫기 핸들러
+  const handleCloseModal = () => {
+    setIsChatModalOpen(false);
+    setSelectedChatRoomId(null);
+    // 모달 닫힐 때 채팅방 목록 새로고침 (읽음 표시 반영)
+    fetchChatRooms();
+  };
+
   // 🔥 채팅방 삭제 핸들러
   const handleDeleteChatRoom = async (e, chatRoomId) => {
     e.stopPropagation(); // 부모 div 클릭(채팅방 이동) 막기
@@ -111,7 +130,6 @@ const ChatListPage = () => {
 
     try {
       const res = await chatApi.deleteChatRoom(chatRoomId);
-      // res.success 체크해도 되고, 안 해도 됨 (백엔드 응답 형식에 맞춰서)
 
       // 프론트 목록에서 해당 채팅방 제거
       setChatRooms((prev) =>
@@ -175,7 +193,7 @@ const ChatListPage = () => {
               return (
                 <div
                   key={chatRoom.chatRoomId}
-                  onClick={() => navigate(`/chat/${chatRoom.chatRoomId}`)}
+                  onClick={() => handleChatRoomClick(chatRoom.chatRoomId)}
                   className="p-4 hover:bg-gray-50 cursor-pointer transition-all"
                 >
                   <div className="flex items-center gap-4">
@@ -219,7 +237,7 @@ const ChatListPage = () => {
                             onClick={(e) =>
                               handleDeleteChatRoom(e, chatRoom.chatRoomId)
                             }
-                            className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-gray-100"
+                            className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
                             title="채팅방 삭제"
                           >
                             <i className="bi bi-trash"></i>
@@ -234,6 +252,13 @@ const ChatListPage = () => {
           </div>
         )}
       </div>
+
+      {/* 🆕 채팅방 모달 */}
+      <ChatRoomModal
+        chatRoomId={selectedChatRoomId}
+        isOpen={isChatModalOpen}
+        onClose={handleCloseModal}
+      />
 
       <Footer />
     </div>
