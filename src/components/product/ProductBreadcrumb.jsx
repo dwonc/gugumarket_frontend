@@ -20,7 +20,9 @@ const ProductBreadcrumb = ({ product }) => {
               <span className="text-xs">›</span>
             </>
           )}
-          <span className="text-gray-800 font-medium">{product.title}</span>
+          <span className="text-gray-800 font-medium">
+            {product.productName || product.title}
+          </span>
         </div>
       </div>
     </div>

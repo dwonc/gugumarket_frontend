@@ -124,6 +124,16 @@ const ProductDetailPage = () => {
     setIsShareModalOpen(true);
   };
 
+  // 🎯 찜하기 핸들러 (인증 체크 추가)
+  const handleLikeToggle = () => {
+    if (!isAuthenticated) {
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+      return;
+    }
+    toggleLike(product.productId);
+  };
+
   // 🎯 신고하기 핸들러 (ReportModal 사용)
   const handleReport = () => {
     if (!isAuthenticated) {
@@ -240,7 +250,7 @@ const ProductDetailPage = () => {
                 isSeller={isSeller}
                 onStatusSave={handleStatusSave}
                 onDelete={handleDelete}
-                onLikeToggle={toggleLike}
+                onLikeToggle={handleLikeToggle} /* ✅ 수정: wrapper 함수 사용 */
                 onShare={handleShare}
                 onReport={handleReport}
               />

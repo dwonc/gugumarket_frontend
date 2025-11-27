@@ -6,7 +6,9 @@ const ProductInfoSection = ({ product, isAdmin, reportCount }) => {
   return (
     <>
       {/* Title */}
-      <h1 className="text-3xl font-bold text-gray-800 mb-4">{product.title}</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-4">
+        {product.productName || product.title}
+      </h1>
 
       {/* 🎯 신고 배지 - 모든 유저에게 표시 */}
       {reportCount > 0 && (
@@ -29,7 +31,7 @@ const ProductInfoSection = ({ product, isAdmin, reportCount }) => {
       <div className="space-y-3 py-6 border-y border-gray-200">
         <div className="flex justify-between">
           <span className="text-gray-600">카테고리</span>
-          <span className="font-medium">{product.category?.name}</span>
+          <span className="font-medium">{product.categoryName}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">상태</span>
@@ -37,17 +39,21 @@ const ProductInfoSection = ({ product, isAdmin, reportCount }) => {
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">판매자</span>
-          <span className="font-medium">{product.sellerNickname}</span>
+          <span className="font-medium">
+            {product.sellerNickname || product.sellerName}
+          </span>
         </div>
-        {product.seller?.address && (
+        {(product.sellerAddress || product.seller?.address) && (
           <div className="flex justify-between">
             <span className="text-gray-600">거래지역</span>
-            <span className="font-medium">{product.seller.address}</span>
+            <span className="font-medium">
+              {product.sellerAddress || product.seller?.address}
+            </span>
           </div>
         )}
         <div className="flex justify-between">
           <span className="text-gray-600">조회수</span>
-          <span className="font-medium">{product.viewCount}</span>
+          <span className="font-medium">{product.viewCount || 0}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">등록일</span>

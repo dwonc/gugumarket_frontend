@@ -12,13 +12,53 @@ const MapPage = () => {
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [hoveredProduct, setHoveredProduct] = useState(null); // 🆕 호버 상태
+  const [hoveredProduct, setHoveredProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const [radiusFilter, setRadiusFilter] = useState(null);
-  const [priceFilter, setPriceFilter] = useState(null); // 🆕 가격 필터
+  const [priceFilter, setPriceFilter] = useState(null);
 
-  // 🆕 상품 목록 가져오기 (가격 필터 포함)
+  // 🎨 상태별 스타일 설정
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "AVAILABLE":
+        return {
+          color: "#FF6B6B", // 빨간색
+          bgColor: "#FF6B6B",
+          badge: null,
+          opacity: 1,
+          filter: "none",
+        };
+      case "RESERVED":
+        return {
+          color: "#FFA500", // 주황색
+          bgColor: "#FFA500",
+          badge: "예약중",
+          badgeBg: "#FFA500",
+          opacity: 0.9,
+          filter: "none",
+        };
+      case "SOLD":
+        return {
+          color: "#9CA3AF", // 회색
+          bgColor: "#9CA3AF",
+          badge: "판매완료",
+          badgeBg: "#6B7280",
+          opacity: 0.6,
+          filter: "grayscale(100%)",
+        };
+      default:
+        return {
+          color: "#FF6B6B",
+          bgColor: "#FF6B6B",
+          badge: null,
+          opacity: 1,
+          filter: "none",
+        };
+    }
+  };
+
+  // 상품 목록 가져오기
   const loadProducts = async () => {
     try {
       let url = "http://localhost:8080/api/products/map";
@@ -29,10 +69,6 @@ const MapPage = () => {
       const response = await axios.get(url);
 
       if (response.data.success) {
-        const withCoords = response.data.products.filter(
-          (p) => p.latitude != null && p.longitude != null
-        );
-
         setProducts(response.data.products);
         setFilteredProducts(response.data.products);
         setLoading(false);
@@ -83,12 +119,12 @@ const MapPage = () => {
     setFilteredProducts(filtered);
   };
 
-  // 🆕 가격 필터 적용
+  // 가격 필터 적용
   const applyPriceFilter = (maxPrice) => {
     setPriceFilter(maxPrice);
   };
 
-  // 🆕 가격 필터 변경 시 상품 재조회
+  // 가격 필터 변경 시 상품 재조회
   useEffect(() => {
     loadProducts();
   }, [priceFilter]);
@@ -212,10 +248,6 @@ const MapPage = () => {
   // 🔥 알 마커 생성 함수
   const createMarkers = useCallback(() => {
     if (!map || filteredProducts.length === 0) {
-      console.log("⚠️ 마커 표시 조건 미충족", {
-        map: !!map,
-        count: filteredProducts.length,
-      });
       return;
     }
 
@@ -229,53 +261,70 @@ const MapPage = () => {
     const newMarkers = [];
     const bounds = new window.kakao.maps.LatLngBounds();
 
-    filteredProducts.forEach((product, index) => {
+    filteredProducts.forEach((product) => {
       if (product.latitude && product.longitude) {
-        console.log(
-          `🥚 알 마커 생성 #${index + 1}:`,
-          product.productName,
-          product.latitude,
-          product.longitude
-        );
-
         const position = new window.kakao.maps.LatLng(
           product.latitude,
           product.longitude
         );
 
+        // 🎨 상태별 스타일 가져오기
+        const style = getStatusStyle(product.status);
+        const isHovered = hoveredProduct?.productId === product.productId;
+
         // 🥚 알 마커 HTML
         const markerContent = document.createElement("div");
         markerContent.className = "egg-marker";
+        markerContent.style.opacity = style.opacity;
         markerContent.innerHTML = `
           <div style="
             position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
-            cursor: pointer;
+            cursor: ${product.status === "SOLD" ? "not-allowed" : "pointer"};
           ">
+            ${
+              style.badge
+                ? `
+              <div style="
+                position: absolute;
+                top: -5px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${style.badgeBg};
+                color: white;
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 10px;
+                white-space: nowrap;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                z-index: 10;
+              ">
+                ${style.badge}
+              </div>
+            `
+                : ""
+            }
+            
             <img 
               src="${
-                hoveredProduct?.productId === product.productId
-                  ? "/images/egg-cracked.png"
-                  : "/images/egg-normal.png"
+                isHovered ? "/images/egg-cracked.png" : "/images/egg-normal.png"
               }" 
               alt="egg" 
               style="
                 width: 50px;
                 height: 50px;
                 object-fit: contain;
-                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+                filter: ${style.filter} drop-shadow(0 2px 4px rgba(0,0,0,0.2));
                 transition: transform 0.3s ease;
-                transform: ${
-                  hoveredProduct?.productId === product.productId
-                    ? "scale(1.2)"
-                    : "scale(1)"
-                };
+                transform: ${isHovered ? "scale(1.2)" : "scale(1)"};
               "
             />
+            
             <div style="
-              background: #FF6B6B;
+              background: ${style.bgColor};
               color: white;
               padding: 4px 8px;
               border-radius: 12px;
@@ -298,17 +347,18 @@ const MapPage = () => {
 
         customOverlay.setMap(map);
 
-        // 🆕 마우스 호버 이벤트
-        markerContent.addEventListener("mouseenter", () => {
-          setHoveredProduct(product);
-        });
+        // 마우스 호버 이벤트 (판매완료는 제외)
+        if (product.status !== "SOLD") {
+          markerContent.addEventListener("mouseenter", () => {
+            setHoveredProduct(product);
+          });
 
-        markerContent.addEventListener("mouseleave", () => {
-          // 약간의 딜레이를 줘서 미리보기 카드로 마우스 이동 가능하게
-          setTimeout(() => {
-            setHoveredProduct(null);
-          }, 200);
-        });
+          markerContent.addEventListener("mouseleave", () => {
+            setTimeout(() => {
+              setHoveredProduct(null);
+            }, 200);
+          });
+        }
 
         // 클릭 시 상세 모달
         markerContent.addEventListener("click", () => {
@@ -336,6 +386,21 @@ const MapPage = () => {
 
   const handleProductClick = (productId) => {
     navigate(`/products/${productId}`);
+  };
+
+  // 🎨 상태 배지 렌더링 함수
+  const renderStatusBadge = (status) => {
+    const style = getStatusStyle(status);
+    if (!style.badge) return null;
+
+    return (
+      <div
+        className="absolute top-2 right-2 px-3 py-1 rounded-full text-white font-bold text-xs shadow-lg"
+        style={{ backgroundColor: style.badgeBg }}
+      >
+        {style.badge}
+      </div>
+    );
   };
 
   return (
@@ -406,7 +471,7 @@ const MapPage = () => {
             </div>
           </div>
 
-          {/* 🆕 가격 필터 */}
+          {/* 가격 필터 */}
           <div className="mb-6">
             <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center">
               <i className="bi bi-cash-coin text-yellow-500 mr-2"></i>
@@ -509,9 +574,15 @@ const MapPage = () => {
             onMouseLeave={() => setHoveredProduct(null)}
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl overflow-hidden w-72 pointer-events-auto animate-fadeIn"
+              className="bg-white rounded-2xl shadow-2xl overflow-hidden w-72 pointer-events-auto animate-fadeIn relative"
               onClick={() => handleProductClick(hoveredProduct.productId)}
+              style={{
+                opacity: getStatusStyle(hoveredProduct.status).opacity,
+              }}
             >
+              {/* 🎨 상태 배지 */}
+              {renderStatusBadge(hoveredProduct.status)}
+
               {/* 상품 이미지 */}
               <div
                 className="h-40 bg-cover bg-center cursor-pointer"
@@ -519,6 +590,7 @@ const MapPage = () => {
                   backgroundImage: `url(${
                     hoveredProduct.thumbnailImageUrl || "/images/no-image.png"
                   })`,
+                  filter: getStatusStyle(hoveredProduct.status).filter,
                 }}
               ></div>
 
@@ -528,7 +600,12 @@ const MapPage = () => {
                   {hoveredProduct.productName}
                 </h3>
 
-                <p className="text-xl font-bold text-primary mb-2">
+                <p
+                  className="text-xl font-bold mb-2"
+                  style={{
+                    color: getStatusStyle(hoveredProduct.status).color,
+                  }}
+                >
                   {hoveredProduct.price?.toLocaleString()}원
                 </p>
 
@@ -564,71 +641,86 @@ const MapPage = () => {
 
             <div className="fixed left-1/2 bottom-8 transform -translate-x-1/2 z-50 w-11/12 max-w-md">
               <div
-                className="bg-white rounded-2xl shadow-2xl overflow-hidden animate-slideUp"
+                className="bg-white rounded-2xl shadow-2xl overflow-hidden animate-slideUp relative"
                 onClick={(e) => e.stopPropagation()}
+                style={{
+                  opacity: getStatusStyle(selectedProduct.status).opacity,
+                }}
               >
-                <div className="relative">
-                  <button
-                    onClick={() => setSelectedProduct(null)}
-                    className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10"
-                  >
-                    <i className="bi bi-x-lg text-gray-700"></i>
-                  </button>
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10"
+                >
+                  <i className="bi bi-x-lg text-gray-700"></i>
+                </button>
 
-                  <div
-                    className="h-48 bg-cover bg-center cursor-pointer"
-                    style={{
-                      backgroundImage: `url(${
-                        selectedProduct.thumbnailImageUrl ||
-                        "/images/no-image.png"
-                      })`,
-                    }}
+                {/* 🎨 상태 배지 */}
+                {renderStatusBadge(selectedProduct.status)}
+
+                <div
+                  className="h-48 bg-cover bg-center cursor-pointer"
+                  style={{
+                    backgroundImage: `url(${
+                      selectedProduct.thumbnailImageUrl ||
+                      "/images/no-image.png"
+                    })`,
+                    filter: getStatusStyle(selectedProduct.status).filter,
+                  }}
+                  onClick={() => handleProductClick(selectedProduct.productId)}
+                ></div>
+
+                <div className="p-4">
+                  <h3
+                    className="text-xl font-bold text-gray-800 mb-2 cursor-pointer hover:text-primary line-clamp-2"
                     onClick={() =>
                       handleProductClick(selectedProduct.productId)
                     }
-                  ></div>
+                  >
+                    {selectedProduct.productName}
+                  </h3>
 
-                  <div className="p-4">
-                    <h3
-                      className="text-xl font-bold text-gray-800 mb-2 cursor-pointer hover:text-primary line-clamp-2"
-                      onClick={() =>
-                        handleProductClick(selectedProduct.productId)
-                      }
-                    >
-                      {selectedProduct.productName}
-                    </h3>
+                  <p
+                    className="text-2xl font-bold mb-2"
+                    style={{
+                      color: getStatusStyle(selectedProduct.status).color,
+                    }}
+                  >
+                    {selectedProduct.price?.toLocaleString()}원
+                  </p>
 
-                    <p className="text-2xl font-bold text-primary mb-2">
-                      {selectedProduct.price?.toLocaleString()}원
-                    </p>
-
-                    <div className="flex items-center text-sm text-gray-600 mb-2">
-                      <i className="bi bi-geo-alt mr-1"></i>
-                      <span className="line-clamp-1">
-                        {selectedProduct.sellerAddress || "위치 정보 없음"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                      <span>
-                        <i className="bi bi-eye mr-1"></i>
-                        조회 {selectedProduct.viewCount || 0}
-                      </span>
-                      <span>
-                        <i className="bi bi-heart mr-1"></i>찜{" "}
-                        {selectedProduct.likeCount || 0}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        handleProductClick(selectedProduct.productId)
-                      }
-                      className="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-secondary transition-all duration-300 shadow-md hover:shadow-lg"
-                    >
-                      상품 보러가기
-                    </button>
+                  <div className="flex items-center text-sm text-gray-600 mb-2">
+                    <i className="bi bi-geo-alt mr-1"></i>
+                    <span className="line-clamp-1">
+                      {selectedProduct.sellerAddress || "위치 정보 없음"}
+                    </span>
                   </div>
+
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                    <span>
+                      <i className="bi bi-eye mr-1"></i>
+                      조회 {selectedProduct.viewCount || 0}
+                    </span>
+                    <span>
+                      <i className="bi bi-heart mr-1"></i>찜{" "}
+                      {selectedProduct.likeCount || 0}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      handleProductClick(selectedProduct.productId)
+                    }
+                    className={`w-full py-3 rounded-lg font-bold transition-all duration-300 shadow-md hover:shadow-lg ${
+                      selectedProduct.status === "SOLD"
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : "bg-primary text-white hover:bg-secondary"
+                    }`}
+                    disabled={selectedProduct.status === "SOLD"}
+                  >
+                    {selectedProduct.status === "SOLD"
+                      ? "판매완료된 상품입니다"
+                      : "상품 보러가기"}
+                  </button>
                 </div>
               </div>
             </div>

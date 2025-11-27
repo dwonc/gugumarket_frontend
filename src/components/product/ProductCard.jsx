@@ -49,8 +49,29 @@ const ProductCard = ({ product }) => {
     return price?.toLocaleString("ko-KR") || "0";
   };
 
+  // ✅ 상태별 배지 반환 함수
+  const getStatusBadge = () => {
+    switch (product.status) {
+      case "RESERVED":
+        return (
+          <span className="px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded-md">
+            예약중
+          </span>
+        );
+      case "SALE":
+        return (
+          <span className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-md">
+            판매중
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group">
+      {/* 이미지 영역 */}
       <div className="relative overflow-hidden">
         <Link to={`/products/${product.productId}`}>
           <img
@@ -68,6 +89,17 @@ const ProductCard = ({ product }) => {
           />
         </Link>
 
+        {/* ✅ 판매완료 오버레이 */}
+        {product.status === "SOLD_OUT" && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-white text-4xl font-bold mb-2">SOLD OUT</div>
+              <div className="text-white/80 text-lg font-medium">판매완료</div>
+            </div>
+          </div>
+        )}
+
+        {/* 찜하기 버튼 */}
         <button
           onClick={handleLikeToggle}
           className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white transition-all duration-300 transform hover:scale-110"
@@ -79,6 +111,7 @@ const ProductCard = ({ product }) => {
           ></i>
         </button>
 
+        {/* 인기 배지 */}
         {product.viewCount > 200 && (
           <div className="absolute bottom-4 left-4 bg-primary/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium">
             인기
@@ -86,17 +119,24 @@ const ProductCard = ({ product }) => {
         )}
       </div>
 
+      {/* 정보 영역 */}
       <div className="p-5">
+        {/* 제목 */}
         <Link to={`/products/${product.productId}`} className="block">
           <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1">
             {product.productName || product.title}
           </h3>
         </Link>
 
-        <p className="text-2xl font-bold text-primary mb-3">
-          {formatPrice(product.price)}원
-        </p>
+        {/* ✅ 가격 + 상태 배지 */}
+        <div className="flex items-center gap-2 mb-3">
+          <p className="text-2xl font-bold text-primary">
+            {formatPrice(product.price)}원
+          </p>
+          {getStatusBadge()}
+        </div>
 
+        {/* 하단 정보 */}
         <div className="flex items-center justify-between text-sm text-gray-500">
           <span className="flex items-center gap-1">
             <i className="bi bi-geo-alt"></i>
