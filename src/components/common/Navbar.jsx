@@ -46,8 +46,8 @@ const Navbar = () => {
     (async () => {
       try {
         const [notiRes, chatRes] = await Promise.all([
-          notificationApi.getUnreadCount(), // ResponseDto 래핑
-          chatApi.getTotalUnreadCount(), // { success, unreadCount }
+          notificationApi.getUnreadCount(),
+          chatApi.getTotalUnreadCount(),
         ]);
 
         if (notiRes.data.success) {
@@ -61,9 +61,8 @@ const Navbar = () => {
       }
     })();
 
-    // 2) 그 다음부터는 WebSocket 이벤트로만 업데이트
-    // 알림 카운트
-    subscribeDestination(
+    // 2) WebSocket 구독
+    const unsubNoti = subscribeDestination(
       `/topic/notifications-count/${user.userId}`,
       (payload) => {
         const count = Number(payload);
@@ -73,16 +72,23 @@ const Navbar = () => {
       }
     );
 
-    // 채팅 카운트
-    subscribeDestination(
+    const unsubChat = subscribeDestination(
       `/topic/chat/unread-count/${user.userId}`,
       (payload) => {
+        console.log("📨 채팅 카운트 WebSocket 수신:", payload);
         const count = Number(payload);
         if (!Number.isNaN(count)) {
+          console.log("✅ 채팅 카운트 업데이트:", count);
           setChatUnreadCount(count);
         }
       }
     );
+
+    // 3) cleanup: 구독 해제
+    return () => {
+      if (typeof unsubNoti === "function") unsubNoti();
+      if (typeof unsubChat === "function") unsubChat();
+    };
   }, [
     connected,
     isAuthenticated,

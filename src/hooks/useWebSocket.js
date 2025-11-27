@@ -74,13 +74,14 @@ const useWebSocket = () => {
   const subscribeDestination = useCallback((destination, callback) => {
     if (!clientRef.current?.connected) {
       console.error("❌ WebSocket이 연결되어 있지 않습니다.");
-      return;
+      return null;
     }
 
-    // if (subscriptionsRef.current[destination]) {
-    //   console.log(`✅ 이미 구독 중: ${destination}`);
-    //   return;
-    // }
+    // 중복 구독 방지
+    if (subscriptionsRef.current[destination]) {
+      console.log(`✅ 이미 구독 중: ${destination}`);
+      return () => {};
+    }
 
     try {
       const sub = clientRef.current.subscribe(destination, (message) => {
@@ -94,8 +95,19 @@ const useWebSocket = () => {
       });
 
       subscriptionsRef.current[destination] = sub;
+      console.log(`✅ 구독 성공: ${destination}`);
+
+      // unsubscribe 함수 반환
+      return () => {
+        if (subscriptionsRef.current[destination]) {
+          subscriptionsRef.current[destination].unsubscribe();
+          delete subscriptionsRef.current[destination];
+          console.log(`✅ 구독 해제: ${destination}`);
+        }
+      };
     } catch (err) {
       console.error(`❌ 구독 실패: ${destination}`, err);
+      return null;
     }
   }, []);
 
@@ -106,11 +118,10 @@ const useWebSocket = () => {
     }
   }, []);
 
-  /** 기존 채팅용 래퍼들 – 네 코드랑 맞춰서 */
   const subscribe = useCallback(
     (chatRoomId, callback) => {
       const dest = `/topic/chat/${chatRoomId}`;
-      subscribeDestination(dest, callback);
+      return subscribeDestination(dest, callback);
     },
     [subscribeDestination]
   );
@@ -155,7 +166,6 @@ const useWebSocket = () => {
     });
   }, []);
 
-  /** 🔥 accessToken 생길 때마다 connect 시도 */
   useEffect(() => {
     if (accessToken) {
       connect();
@@ -170,9 +180,10 @@ const useWebSocket = () => {
     error,
     connect,
     disconnect,
-    subscribe, // 채팅방용
-    subscribeDestination, // 공용 (알림/채팅 뱃지 등)
+    subscribe,
+    subscribeDestination,
     unsubscribe,
+    unsubscribeDestination,
     sendMessage,
     enterChatRoom,
     leaveChatRoom,
