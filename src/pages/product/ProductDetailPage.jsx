@@ -187,7 +187,8 @@ const ProductDetailPage = () => {
 
   // 신고 성공 후 핸들러
   const handleReportSuccess = () => {
-    fetchProduct(id);
+    // ✅ 로컬에서 즉시 +1 (WebSocket 오기 전까지 빠른 피드백)
+    setReportCount((prev) => prev + 1);
   };
 
   // 로딩 중
