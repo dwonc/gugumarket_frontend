@@ -22,6 +22,18 @@ const CommentSection = ({ productId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // 🔐 프론트에서 먼저 로그인 체크
+    if (!isAuthenticated) {
+      if (
+        window.confirm(
+          "로그인이 필요한 기능입니다.\n로그인 페이지로 이동하시겠습니까?"
+        )
+      ) {
+        navigate("/login");
+      }
+      return;
+    }
+
     if (!content.trim()) {
       alert("댓글 내용을 입력해주세요.");
       return;
@@ -30,10 +42,21 @@ const CommentSection = ({ productId }) => {
     setSubmitting(true);
     try {
       await createComment(productId, content);
-      setContent(""); // 입력창 초기화
+      setContent("");
       alert("✅ 댓글이 작성되었습니다!");
     } catch (error) {
-      alert("❌ " + error.message);
+      console.error(error);
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "댓글 작성 중 오류가 발생했습니다.";
+      alert("❌ " + msg);
+
+      // 혹시 백엔드에서 401을 또 던지면 (토큰 만료 등)
+      if (error.response?.status === 401) {
+        // 이때는 axios 인터셉터가 이미 logout + redirect 했을 수도 있음
+        // 추가 UX를 주고 싶으면 여기서도 navigate("/login") 해도 됨
+      }
     } finally {
       setSubmitting(false);
     }

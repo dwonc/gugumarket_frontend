@@ -51,19 +51,8 @@ export const useCommentStore = create((set, get) => ({
       }
     } catch (error) {
       console.error("댓글 작성 실패:", error);
-
-      // 로그인 필요
-      if (error.response?.status === 401) {
-        if (
-          confirm(
-            "로그인이 필요한 기능입니다.\n로그인 페이지로 이동하시겠습니까?"
-          )
-        ) {
-          window.location.href = "/login";
-        }
-        return null;
-      }
-
+      // ❗여기서 더 이상 confirm / redirect 하지 말고
+      // 그냥 에러를 밖으로 던진다
       throw error;
     }
   },

@@ -2,114 +2,87 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import useAuthStore from "../../stores/authStore";
 import { notificationApi } from "../../api/notificationApi";
-import chatApi from "../../api/chatApi"; // ✅ 추가!
-import useNotificationStore from "../../stores/notificationStore"; // ✅ 추가
-import useWebSocket from "../../hooks/useWebSocket"; // ✅ 추가
+import chatApi from "../../api/chatApi";
+import useNotificationStore from "../../stores/notificationStore";
+import useWebSocket from "../../hooks/useWebSocket";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
 
-  // ✅ 알림은 전역 store 사용
+  // 알림 전역 상태
   const { unreadCount, setUnreadCount } = useNotificationStore();
 
-  // ✅ WebSocket
+  // WebSocket
   const { connected, subscribeDestination } = useWebSocket();
 
-  // ✅ 채팅 unreadCount 는 로컬 state 그대로
+  // 채팅 unreadCount (로컬 state)
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
-  // ✅ 알림 unreadCount 초기 로딩 (로그인 / 로그아웃 시)
+  const isAdmin = user?.role === "ADMIN";
+
+  /** 👉 홈 클릭 시 필터 초기화 + 메인으로 이동 */
+  const handleHomeClick = () => {
+    navigate({
+      pathname: "/",
+      search: "?categoryId=0&page=0",
+    });
+  };
+
+  /** ✅ 로그인/로그아웃 시 알림/채팅 카운트 초기화 */
   useEffect(() => {
     if (!isAuthenticated) {
       setUnreadCount(0);
+      setChatUnreadCount(0);
       return;
     }
-
-    const fetchNotificationUnreadCount = async () => {
-      try {
-        const response = await notificationApi.getUnreadCount();
-        if (response.data.success) {
-          setUnreadCount(response.data.data.count);
-        }
-      } catch (error) {
-        console.error("알림 개수 조회 실패:", error);
-        if (error.response?.status === 401) {
-          setUnreadCount(0);
-        }
-      }
-    };
-
-    fetchNotificationUnreadCount();
   }, [isAuthenticated, setUnreadCount]);
 
-  // ✅ 채팅 읽지 않은 메시지 개수 조회 + 30초마다 갱신
+  /** ✅ WebSocket 연결 + 로그인 후: 초기 동기화 + 실시간 구독 */
   useEffect(() => {
-    if (!isAuthenticated) {
-      setChatUnreadCount(0);
-      return;
-    }
+    if (!connected || !isAuthenticated || !user?.userId) return;
 
-    const fetchChatUnreadCount = async () => {
+    // 1) 연결 직후 REST로 현재 값 동기화
+    (async () => {
       try {
-        const response = await chatApi.getTotalUnreadCount();
-        if (response.success) {
-          setChatUnreadCount(response.unreadCount);
+        const [notiRes, chatRes] = await Promise.all([
+          notificationApi.getUnreadCount(), // ResponseDto 래핑
+          chatApi.getTotalUnreadCount(), // { success, unreadCount }
+        ]);
+
+        if (notiRes.data.success) {
+          setUnreadCount(notiRes.data.data.count);
         }
-      } catch (error) {
-        console.error("채팅 읽지 않은 메시지 개수 조회 실패:", error);
-        if (error.response?.status === 401) {
-          setChatUnreadCount(0);
+        if (chatRes.success) {
+          setChatUnreadCount(chatRes.unreadCount);
+        }
+      } catch (e) {
+        console.error("초기 unread 동기화 실패:", e);
+      }
+    })();
+
+    // 2) 그 다음부터는 WebSocket 이벤트로만 업데이트
+    // 알림 카운트
+    subscribeDestination(
+      `/topic/notifications-count/${user.userId}`,
+      (payload) => {
+        const count = Number(payload);
+        if (!Number.isNaN(count)) {
+          setUnreadCount(count);
         }
       }
-    };
+    );
 
-    fetchChatUnreadCount(); // 초기 1번
-
-    const interval = setInterval(fetchChatUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
-
-  // ✅ 채팅 읽지 않은 메시지 개수 조회
-  const fetchChatUnreadCount = async () => {
-    if (!isAuthenticated) {
-      setChatUnreadCount(0);
-      return;
-    }
-
-    try {
-      const response = await chatApi.getTotalUnreadCount();
-      if (response.success) {
-        setChatUnreadCount(response.unreadCount);
+    // 채팅 카운트
+    subscribeDestination(
+      `/topic/chat/unread-count/${user.userId}`,
+      (payload) => {
+        const count = Number(payload);
+        if (!Number.isNaN(count)) {
+          setChatUnreadCount(count);
+        }
       }
-    } catch (error) {
-      console.error("채팅 읽지 않은 메시지 개수 조회 실패:", error);
-      if (error.response?.status === 401) {
-        setChatUnreadCount(0);
-      }
-    }
-  };
-
-  // ✅ WebSocket 실시간 알림 카운트 반영
-  useEffect(() => {
-    if (!connected) return;
-    if (!isAuthenticated) return;
-    if (!user || !user.userId) return;
-
-    const dest = `/topic/notifications-count/${user.userId}`;
-
-    subscribeDestination(dest, (payload) => {
-      if (typeof payload === "number") {
-        setUnreadCount(payload);
-      } else if (typeof payload === "string" && !isNaN(Number(payload))) {
-        setUnreadCount(Number(payload));
-      } else if (payload?.unreadCount != null) {
-        setUnreadCount(Number(payload.unreadCount));
-      } else {
-        // 혹시 NotificationDto만 날라오면 일단 +1
-        setUnreadCount((prev) => prev + 1);
-      }
-    });
+    );
   }, [
     connected,
     isAuthenticated,
@@ -121,34 +94,6 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     navigate("/login");
-  };
-
-  // ✅ 채팅 unreadCount 실시간 구독
-  useEffect(() => {
-    if (!connected) return;
-    if (!isAuthenticated) return;
-    if (!user?.userId) return;
-
-    const dest = `/topic/chat/unread-count/${user.userId}`;
-
-    subscribeDestination(dest, (payload) => {
-      // backend에서 long 그대로 보내니까 string/number 둘 다 처리
-      const count = Number(payload);
-
-      if (!Number.isNaN(count)) {
-        setChatUnreadCount(count);
-      }
-    });
-  }, [connected, isAuthenticated, user, subscribeDestination]);
-
-  const isAdmin = user?.role === "ADMIN";
-
-  const handleHomeClick = () => {
-    // 👉 항상 전체 카테고리 + 1페이지로 가고 싶을 때
-    navigate({
-      pathname: "/",
-      search: "?categoryId=0&page=0", // 네가 쓰는 기본값에 맞게 수정 (0이면 0으로)
-    });
   };
 
   return (
@@ -179,7 +124,7 @@ const Navbar = () => {
             <div className="flex items-center space-x-6">
               {isAuthenticated ? (
                 <>
-                  {/* ✅ 알림 - notificationUnreadCount 사용 */}
+                  {/* 알림 */}
                   <Link
                     to="/notifications"
                     className="relative hover:underline flex items-center"
@@ -222,11 +167,9 @@ const Navbar = () => {
       <nav className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <Link
-              to="/"
-              onClick={() => {
-                onHomeClick && onHomeClick(); // 🔥 필터 초기화
-              }}
+            <button
+              type="button"
+              onClick={handleHomeClick}
               className="flex items-center space-x-3 group"
             >
               <img
@@ -247,20 +190,17 @@ const Navbar = () => {
               <span className="text-3xl font-bold text-primary">
                 GUGU Market
               </span>
-            </Link>
+            </button>
 
             <div className="flex items-center space-x-8">
-              <Link
-                to="/"
-                onClick={() => {
-                  onHomeClick && onHomeClick(); // 🔥 필터 초기화
-                }}
+              <button
+                type="button"
+                onClick={handleHomeClick}
                 className="text-gray-700 hover:text-primary font-medium transition-colors"
               >
                 홈
-              </Link>
+              </button>
 
-              {/* 🗺️ 지도 링크 */}
               <Link
                 to="/map"
                 className="text-gray-700 hover:text-primary font-medium transition-colors flex items-center space-x-1"
@@ -276,7 +216,7 @@ const Navbar = () => {
                 마이페이지
               </Link>
 
-              {/* ✅ 채팅 링크 - chatUnreadCount 사용 */}
+              {/* 채팅 */}
               <Link
                 to="/chat"
                 className="relative text-gray-700 hover:text-primary font-medium transition-colors flex items-center space-x-1"
