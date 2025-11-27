@@ -2,35 +2,39 @@ import { useState } from 'react';
 import { shareProduct } from '../../utils/shareUtils';
 
 const ShareModal = ({ isOpen, onClose, product }) => {
+    // 복사 완료 메시지를 관리하는 상태
     const [copiedMessage, setCopiedMessage] = useState('');
-
+    // 모달이 열려있지 않거나 (isOpen=false) 상품 정보가 없으면 null을 반환하여 렌더링 중단
     if (!isOpen || !product) return null;
-
+    // --- 1. 공유 처리 핸들러 ---
     const handleShare = async (platform) => {
         try {
             if (platform === 'clipboard') {
+                // 클립보드 복사 로직 실행
                 const result = await shareProduct.clipboard(product);
                 if (result.success) {
-                    setCopiedMessage(result.message);
+                    setCopiedMessage(result.message); // 복사 성공 메시지 설정
                     setTimeout(() => {
                         setCopiedMessage('');
-                        onClose();
+                        onClose(); // 2초 후 메시지 초기화 및 모달 닫기
                     }, 2000);
                 }
             } else if (platform === 'native') {
+                // 웹 네이티브 공유 API 실행
                 const result = await shareProduct.native(product);
                 if (result.success) {
-                    onClose();
+                    onClose(); // 공유 성공 시 모달 닫기
                 }
             } else {
+                // 페이스북, 카카오톡 등 기타 플랫폼 공유 유틸리티 함수 호출
                 shareProduct[platform](product);
             }
         } catch (error) {
             console.error('공유 중 오류 발생:', error);
-            alert('공유 중 오류가 발생했습니다.');
+            alert('공유 중 오류가 발생했습니다.'); // 오류 발생 시 사용자에게 알림
         }
     };
-
+    // --- 2. 공유 옵션 목록 정의 ---
     const shareOptions = [
         {
             id: 'facebook',
@@ -51,7 +55,7 @@ const ShareModal = ({ isOpen, onClose, product }) => {
             name: '카카오톡',
             icon: 'bi-chat-fill',
             color: 'bg-yellow-400 hover:bg-yellow-500',
-            available: typeof window !== 'undefined' && window.Kakao,
+            available: typeof window !== 'undefined' && window.Kakao, // 카카오톡 공유 가능 여부 확인 (window 객체 및 Kakao 객체 존재 여부 체크)
         },
         {
             id: 'instagram',
@@ -77,6 +81,7 @@ const ShareModal = ({ isOpen, onClose, product }) => {
     ];
 
     // 네이티브 공유 사용 가능 여부 확인
+    // navigator 객체와 navigator.share 메서드의 존재 여부를 통해 모바일 환경의 네이티브 공유 기능 사용 가능 여부 판단
     const isNativeShareAvailable = typeof navigator !== 'undefined' && navigator.share;
 
     return (
@@ -113,7 +118,7 @@ const ShareModal = ({ isOpen, onClose, product }) => {
                     </div>
 
                     {/* 네이티브 공유 버튼 (모바일) */}
-                    {isNativeShareAvailable && (
+                    {isNativeShareAvailable && ( // 네이티브 공유가 가능할 때만 버튼 표시
                         <button
                             onClick={() => handleShare('native')}
                             className="w-full mb-4 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-secondary transition-colors flex items-center justify-center gap-2"
@@ -143,7 +148,7 @@ const ShareModal = ({ isOpen, onClose, product }) => {
                     </div>
 
                     {/* 복사 완료 메시지 */}
-                    {copiedMessage && (
+                    {copiedMessage && ( // copiedMessage 상태에 값이 있을 때만 메시지 표시
                         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-center">
                             <i className="bi bi-check-circle-fill text-green-600 mr-2"></i>
                             <span className="text-green-700 font-medium">{copiedMessage}</span>
