@@ -7,58 +7,63 @@ import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
 
+//
+//  상품 등록 페이지 컴포넌트
+//
 const ProductWritePage = () => {
   const navigate = useNavigate();
 
   const {
-    categories,
-    uploading,
-    loading,
-    error,
-    fetchCategories,
-    uploadImage,
-    uploadMultipleImages,
-    createProduct,
+    categories, //  카테고리 목록
+    uploading, //  업로드 중 상태
+    loading, //  로딩 중 상태
+    error, //  에러 상태
+    fetchCategories, //  카테고리 가져오는 함수
+    uploadImage, // 단일 이미지 업로드 함수
+    uploadMultipleImages, // 여러 이미지 업로드 함수
+    createProduct, // 상품 등록 함수
   } = useProductStore();
 
   // 폼 데이터
   const [formData, setFormData] = useState({
-    categoryId: "",
-    title: "",
-    price: "",
-    content: "",
-    mainImage: "",
-    additionalImages: [],
-    bankName: "",
-    accountNumber: "",
-    accountHolder: "",
+    categoryId: "", // 선택된 카테고리 ID
+    title: "", //  상품 제목
+    price: "", //  상품 가격
+    content: "", //  상품  설명
+    mainImage: "", // 대표 이미지 URL
+    additionalImages: [], //  추가 이미지 URL 배열
+    bankName: "", //  은행명
+    accountNumber: "", //  계좌번호
+    accountHolder: "", //  예금주
   });
 
   // 이미지 미리보기
   const [mainImagePreview, setMainImagePreview] = useState("");
+  //  대표이미지 미리보기 URL 저장
   const [additionalImagePreviews, setAdditionalImagePreviews] = useState([]);
+  //  추가 이미지 미리보기 URL 저장
 
   // 에러 메시지
   const [errorMsg, setErrorMsg] = useState("");
 
   // 카테고리 목록 불러오기
   useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    fetchCategories(); //  서버에서 카테고리 목록을 가져옴
+  }, [fetchCategories]); //  fetchCategories가 변경되면 다시 실행
 
   // 입력값 변경 핸들러
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target; // 어떤 필드인지(name)와 입력된 값(value)을 가져와요
     setFormData((prev) => ({
-      ...prev,
-      [name]: value,
+      ...prev, //  기존 데이터는 그대로 두고
+      [name]: value, //  변경된 필드만 새 값으로 업데이트
     }));
   };
 
   // 메인 이미지 업로드
   const handleMainImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; //  선택된 파일을 가져옴 (첫번쨰 파일만)
+    if (!file) return; //  파일이 없으면 함수를 종료
 
     // 파일 크기 체크 (10MB)
     if (file.size > 10 * 1024 * 1024) {
@@ -69,8 +74,11 @@ const ProductWritePage = () => {
 
     try {
       const imageUrl = await uploadImage(file);
+      //  서버에 이미지를 업로드하고 URL을 받아와요
       setFormData((prev) => ({ ...prev, mainImage: imageUrl }));
+      //  formData에 이미지 URL을 저장
       setMainImagePreview(imageUrl);
+      //  미리보기를 위해 이미지 URL을 별도로 저장
     } catch (error) {
       alert("업로드 실패: " + error.message);
       e.target.value = "";
@@ -80,13 +88,16 @@ const ProductWritePage = () => {
   // 메인 이미지 제거
   const removeMainImage = () => {
     setFormData((prev) => ({ ...prev, mainImage: "" }));
+    //  formData에서 이미지 URL을 빈 문자열로 변경
     setMainImagePreview("");
+    //  파일 input도 초기화 ( 다시 같은 파일을 선택할 수 있도록)
     document.getElementById("mainImage").value = "";
   };
 
   // 추가 이미지 업로드
   const handleAdditionalImagesUpload = async (e) => {
     const files = Array.from(e.target.files);
+    //  선택된 여러 파일들을 배열로 변환(FileList -> Array)
     if (files.length === 0) return;
 
     if (files.length > 5) {
@@ -106,8 +117,11 @@ const ProductWritePage = () => {
 
     try {
       const imageUrls = await uploadMultipleImages(files);
+      //  여러 이미지를 한번에 업로드하고 URL 배열을 받아옴
       setFormData((prev) => ({ ...prev, additionalImages: imageUrls }));
+      //  formData에 이미지 URL 배열을 저장
       setAdditionalImagePreviews(imageUrls);
+      //  미리보기를 위해 URL 배열을 별도로 저장
     } catch (error) {
       alert("업로드 실패: " + error.message);
       e.target.value = "";
@@ -117,14 +131,17 @@ const ProductWritePage = () => {
   // 추가 이미지 제거
   const removeAdditionalImages = () => {
     setFormData((prev) => ({ ...prev, additionalImages: [] }));
+    //  form 데이터에서 이미지 배열을 비움
     setAdditionalImagePreviews([]);
+    //  미리보기 배열도 비우기
     document.getElementById("additionalImages").value = "";
+    //  파일 input을 초기화
   };
 
   // 폼 제출
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrorMsg("");
+    e.preventDefault(); //  페이지가 새로고침 되는것을 막기
+    setErrorMsg(""); //  기존 에러메시지 초기화
 
     // 유효성 검사
     if (!formData.categoryId) {
@@ -169,8 +186,10 @@ const ProductWritePage = () => {
 
     try {
       const product = await createProduct(formData);
+      //  createProduct 함수를 호출해서 서버에 상품 등록
       alert("✅ 상품이 등록되었습니다!");
       navigate(`/products/${product.productId}`);
+      //  상품 등록후 등록 된 상품의 상세페이지로 이동
     } catch (error) {
       setErrorMsg(error.message);
     }

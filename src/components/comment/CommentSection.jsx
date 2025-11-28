@@ -6,21 +6,36 @@ import Button from "../common/Button";
 
 const CommentSection = ({ productId }) => {
   const { isAuthenticated } = useAuth();
-  const { comments, loading, fetchComments, createComment } = useCommentStore();
+  //  로그인 정보 가져오기 ( 로그인 여부 확인 )
 
+  const {
+    //  Zustand Store에서 댓글 관련 데이터 / 함수 가져오기
+    comments, //  현재 상품의 모든 댓글 배열 ( 최상위  + 대댓글 모두 포함 )
+    loading, // 댓글 로딩 중 여부
+    fetchComments, // 댓글 목록 조회 함수
+    createComment, // 새 댓글 작성 함수
+  } = useCommentStore();
+
+  //  로컬상태 관리
   const [content, setContent] = useState("");
+  //  댓글 작성 입력창의 내용을 저장하는 상태
   const [submitting, setSubmitting] = useState(false);
+  //  댓글 작성 중인지 여부를 저장하는 상태 ( 중복 제출 방지용 )
 
-  // 댓글 불러오기
+  // 댓글 불러오기 ( 컴포넌트 마운트시 )
   useEffect(() => {
     if (productId) {
+      //  productId가 있을 때만 실행 (undefined 체크)
       fetchComments(productId);
+      //  Zustand Store의 fetchComments 함수 호출
+      //  서버에서 댓글 목록을 가져와서 comments 상태에 저장
     }
   }, [productId, fetchComments]);
+  //  의존성배열 :  productId, fetchComments 가 변경되면 다시 실행
 
-  // 댓글 작성
+  // 댓글 작성 - 폼 제출시 실행 되는 함수
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); //  폼의 기본 동작 ( 페이지 새로고침 ) 방지
 
     // 🔐 프론트에서 먼저 로그인 체크
     if (!isAuthenticated) {
@@ -35,14 +50,19 @@ const CommentSection = ({ productId }) => {
     }
 
     if (!content.trim()) {
+      //  빈 내용 체크 ( 공백만 있는 경우도 걸러냄 )
       alert("댓글 내용을 입력해주세요.");
       return;
     }
 
-    setSubmitting(true);
+    setSubmitting(true); //  제출 시작 ( 버튼 비활성화용 )
     try {
       await createComment(productId, content);
-      setContent("");
+      //  Zustand Store에서 createComment 함수 호출
+      //  파라미터 ( 상품 ID, 댓글내용 )
+      //  세 번째 파라미터( 부모댓글 ID )가 없으면 최상위 댓글로 생성됨
+
+      setContent(""); // 성공 시 입력창 초기화
       alert("✅ 댓글이 작성되었습니다!");
     } catch (error) {
       console.error(error);
@@ -59,6 +79,8 @@ const CommentSection = ({ productId }) => {
       }
     } finally {
       setSubmitting(false);
+      //  성공 실패 여부 상관없이 항상 실행
+      //  제출 종료 (버튼 다시 활성화)
     }
   };
 
