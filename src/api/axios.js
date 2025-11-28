@@ -1,12 +1,17 @@
 import axios from "axios";
 import useAuthStore from "../stores/authStore";
 
+// axios 인스턴스 생성 - API 요청의 기본 설정을 정의
+//VITE_API_BASE_URL=http://localhost:8080
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
+    // 환경변수에서 API 기본 URL을 가져오거나, 없으면 로컬호스트 사용
+    baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
+    // API 요청 타임아웃 설정 (10초)
+    timeout: 10000,
+    // 모든 요청의 기본 헤더 설정
+    headers: {
+        "Content-Type": "application/json",
+    },
 });
 
 // ✅ 이미지 경로 변환 헬퍼 함수

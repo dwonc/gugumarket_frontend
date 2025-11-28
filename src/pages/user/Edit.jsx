@@ -50,6 +50,7 @@ const InputField = React.memo(
 
 const Edit = () => {
   const navigate = useNavigate();
+    // 인증 상태 및 상태 업데이트/로그아웃 함수를 스토어에서 가져옴
   const { isAuthenticated, logout, updateUser } = useAuthStore();
 
   const [formData, setFormData] = useState({
@@ -63,28 +64,33 @@ const Edit = () => {
     newPassword: "",
     confirmPassword: "",
   });
-
+    // 서버에서 로드된 초기 사용자 데이터를 저장하는 상태
   const [initialUserData, setInitialUserData] = useState(null);
+    // 현재 화면에 표시되는 프로필 이미지 URL
   const [profileImageUrl, setProfileImageUrl] = useState(null);
+    // 사용자가 새로 선택한 프로필 이미지 파일 객체
   const [profileImageFile, setProfileImageFile] = useState(null);
+    // 기존 프로필 이미지를 삭제하라는 플래그 상태
   const [deleteProfileImage, setDeleteProfileImage] = useState(false);
-
+    // 로딩, 제출, 에러, 성공 메시지, 모달 상태를 관리
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+    // 프로필 이미지 파일 input 요소에 접근하기 위한 ref
   const profileImageInputRef = useRef(null);
 
   useEffect(() => {
     const fetchEditData = async () => {
       setLoading(true);
       try {
+          // 서버에서 현재 사용자의 회원 정보 데이터를 가져옴
         const response = await userApi.getEditFormData();
         if (response.data.success) {
           const userData = response.data.user;
 
+            // 가져온 데이터로 formData 상태 초기화
           setFormData({
             nickname: userData.nickname || "",
             email: userData.email || "",
@@ -96,8 +102,8 @@ const Edit = () => {
             newPassword: "",
             confirmPassword: "",
           });
-          setInitialUserData(userData);
-          setProfileImageUrl(userData.profileImage || defaultProfileImage);
+          setInitialUserData(userData); // 초기 데이터 상태 저장
+          setProfileImageUrl(userData.profileImage || defaultProfileImage);// 프로필 이미지 URL 설정
         }
       } catch (err) {
         console.error("회원정보 로드 오류:", err);
@@ -106,7 +112,7 @@ const Edit = () => {
         setLoading(false);
       }
     };
-
+      // 인증 상태 확인 후 데이터 로드 또는 로그인 페이지로 리다이렉트
     if (isAuthenticated) {
       fetchEditData();
     } else {
@@ -129,15 +135,16 @@ const Edit = () => {
 
     new window.daum.Postcode({
       oncomplete: function (data) {
+          // 선택된 주소 정보를 추출하여 formData 상태 업데이트
         var addr =
           data.userSelectedType === "R" ? data.roadAddress : data.jibunAddress;
         var extraAddr = "";
 
-        if (data.userSelectedType === "R") {
-          if (data.bname !== "" && /[동|로|가]$/g.test(data.bname)) {
+        if (data.userSelectedType === "R") { //r=도로명 주소
+          if (data.bname !== "" && /[동|로|가]$/g.test(data.bname)) { //동,로,가 중 하나로 끝나는지 확인
             extraAddr += data.bname;
           }
-          if (data.buildingName !== "" && data.apartment === "Y") {
+          if (data.buildingName !== "" && data.apartment === "Y") { //건물이름
             extraAddr +=
               extraAddr !== "" ? ", " + data.buildingName : data.buildingName;
           }
@@ -161,6 +168,7 @@ const Edit = () => {
     setProfileImageFile(null);
     setDeleteProfileImage(true);
 
+      // 파일 입력 요소의 값을 초기화하여 같은 파일을 다시 선택해도 change 이벤트가 발생하도록 처리
     if (profileImageInputRef.current) {
       profileImageInputRef.current.value = "";
     }
@@ -193,12 +201,12 @@ const Edit = () => {
       setProfileImageFile(null);
       return;
     }
-
+      // 파일 리더를 사용하여 선택된 이미지를 미리보기 URL(Data URL)로 변환
     const reader = new FileReader();
     reader.onload = function (e) {
-      setProfileImageUrl(e.target.result);
-      setProfileImageFile(file);
-      setDeleteProfileImage(false);
+      setProfileImageUrl(e.target.result); // 미리보기 URL로 화면 이미지 업데이트
+      setProfileImageFile(file); // 서버로 보낼 파일 객체 상태 저장
+      setDeleteProfileImage(false); // 삭제 플래그 초기화
     };
     reader.readAsDataURL(file);
   }, []);
