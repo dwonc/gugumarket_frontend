@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { adminApi } from "../../api/adminApi";
+import { handleImageError } from "../../utils/formatters";
 
 const ProductTable = ({ products, onRefresh }) => {
   const [searchKeyword, setSearchKeyword] = useState("");

@@ -10,6 +10,7 @@ import UserTable from "../../components/admin/UserTable";
 import ProductTable from "../../components/admin/ProductTable";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import AdminReportsTab from "../../components/admin/AdminReportsTab";
+import { formatDateTime, getQnaStatus } from "../../utils/formatters";
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -172,7 +173,7 @@ const AdminPage = () => {
               <div className="text-right">
                 <p className="text-sm opacity-75">마지막 로그인</p>
                 <p className="text-lg font-semibold">
-                  {new Date().toLocaleString("ko-KR")}
+                  {formatDateTime(qna.createdDate)}
                 </p>
               </div>
             </div>
@@ -291,10 +292,7 @@ const AdminPage = () => {
                               )}
                             </div>
                             <p className="text-gray-600 text-sm mb-2">
-                              작성일:{" "}
-                              {new Date(qna.createdDate).toLocaleString(
-                                "ko-KR"
-                              )}
+                              작성일: {formatDateTime(qna.createdDate)}
                             </p>
                             <p className="text-gray-700 whitespace-pre-line">
                               {qna.content}
@@ -333,9 +331,7 @@ const AdminPage = () => {
                                   <p className="text-sm text-gray-600 mb-2">
                                     <i className="bi bi-reply-fill mr-1"></i>
                                     관리자 답변 |{" "}
-                                    {new Date(
-                                      answer.createdDate
-                                    ).toLocaleString("ko-KR")}
+                                    {formatDateTime(answer.createdDate)}
                                   </p>
                                   <p className="text-gray-800 whitespace-pre-line">
                                     {answer.content}

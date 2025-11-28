@@ -7,6 +7,7 @@ import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Navbar from "../../components/common/Navbar";
 import Footer from "../../components/common/Footer";
+import { formatDate, formatDateTime } from "../../utils/formatters";
 
 const QnaListPage = () => {
   const navigate = useNavigate();
@@ -114,26 +115,6 @@ const QnaListPage = () => {
 
   const handleToggle = (qnaId) => {
     setExpandedId(expandedId === qnaId ? null : qnaId);
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ko-KR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-  };
-
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("ko-KR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   if (!ready) {

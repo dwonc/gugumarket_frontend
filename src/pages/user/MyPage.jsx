@@ -16,6 +16,12 @@ import MySales from "../../components/mypages/MySales";
 import MyLikes from "../../components/mypages/MyLikes";
 import MyNotifications from "../../components/mypages/MyNotifications";
 import MyReports from "../../components/mypages/MyReports";
+import {
+  formatDateTime,
+  formatPrice,
+  getImageUrl,
+  getTransactionStatus,
+} from "../../utils/formatters";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -29,25 +35,6 @@ const NO_IMAGE_PLACEHOLDER =
       'font-family="sans-serif" font-size="16" fill="#FFFFFF">No Image</text>' +
       "</svg>"
   );
-
-const getProductImageUrl = (imagePath) => {
-  if (!imagePath || imagePath.trim() === "") {
-    return NO_IMAGE_PLACEHOLDER;
-  }
-
-  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-    return imagePath;
-  }
-
-  const baseUrl = API_BASE_URL.replace(/\/$/, "");
-  const cleanedPath = imagePath.replace(/^\//, "");
-
-  return `${baseUrl}/${cleanedPath}`;
-};
-
-const formatPrice = (price) => {
-  return price ? price.toLocaleString("ko-KR") : "0";
-};
 
 const MyPage = () => {
   const navigate = useNavigate();
@@ -144,24 +131,6 @@ const MyPage = () => {
 
   const showTab = (tabName) => {
     setActiveTab(tabName);
-  };
-
-  const formatDate = (dateTimeString) => {
-    if (!dateTimeString) return "N/A";
-    const date = new Date(dateTimeString);
-    return date
-      .toLocaleString("ko-KR", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
-      .replace(". ", "-")
-      .replace(". ", "-")
-      .replace(".", "")
-      .replace(" ", " ");
   };
 
   const getStatusBadge = (statusName, isSeller) => {
@@ -517,9 +486,9 @@ const MyPage = () => {
             <MyPurchases
               purchases={purchases}
               formatPrice={formatPrice}
-              formatDate={formatDate}
+              formatDate={formatDateTime}
               getStatusBadge={getStatusBadge}
-              getProductImageUrl={getProductImageUrl}
+              getProductImageUrl={getImageUrl}
               navigate={navigate} // ✅ 추가
               isAuthenticated={isAuthenticated} // ✅ 추가
             />
@@ -530,9 +499,9 @@ const MyPage = () => {
               products={products}
               apiUser={apiUser}
               formatPrice={formatPrice}
-              formatDate={formatDate}
+              formatDate={formatDateTime}
               getStatusBadge={getStatusBadge}
-              getProductImageUrl={getProductImageUrl}
+              getProductImageUrl={getImageUrl}
               confirmPayment={confirmPayment}
               navigate={navigate}
               isAuthenticated={isAuthenticated} // ✅ 추가
@@ -542,7 +511,7 @@ const MyPage = () => {
             <MyLikes
               likes={likes}
               formatPrice={formatPrice}
-              getProductImageUrl={getProductImageUrl}
+              getProductImageUrl={getImageUrl}
               handleUnlike={handleUnlike}
               navigate={navigate}
             />
@@ -550,14 +519,14 @@ const MyPage = () => {
           {activeTab === "notifications" && (
             <MyNotifications
               recentNotifications={recentNotifications}
-              formatDate={formatDate}
+              formatDate={formatDateTime}
               markAsRead={markAsRead}
             />
           )}
           {activeTab === "reports" && apiUser?.role !== "ADMIN" && (
             <MyReports
               reports={reports}
-              formatDate={formatDate}
+              formatDate={formatDateTime}
               navigate={navigate}
             />
           )}
