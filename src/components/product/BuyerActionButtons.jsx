@@ -1,10 +1,18 @@
+//
+//
+//구매자용 버튼들(찜하기, 구매하기)
+
 import { useNavigate } from "react-router-dom";
 import Button from "../common/Button";
 
 const BuyerActionButtons = ({ product, onLikeToggle, isLiked, likeCount }) => {
+  // product: 상품 정보 객체 (productId, title, price, isLiked 등)
+  // onLikeToggle: 찜하기 토글 함수 (부모 컴포넌트에서 전달받음)
+  // isLiked: 현재 찜 상태 (true/false)
+  // likeCount: 찜 개수
   const navigate = useNavigate();
 
-  if (!product) return null;
+  if (!product) return null; // product가 없으면 아무것도 렌더링하지 않음
 
   // prop이 안 들어오면 product 객체에서 fallback
   const effectiveIsLiked =
@@ -13,6 +21,7 @@ const BuyerActionButtons = ({ product, onLikeToggle, isLiked, likeCount }) => {
   const effectiveLikeCount =
     typeof likeCount === "number" ? likeCount : product.likeCount || 0;
 
+  // ===== 찜하기 버튼 클릭 핸들러 =====
   const handleLikeClick = async () => {
     try {
       // store 쪽에서 알아서 상태를 변경해주고,

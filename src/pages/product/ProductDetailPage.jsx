@@ -30,22 +30,33 @@ import { handleStartChatModal } from "../../utils/handleStartChatModal";
 import ChatRoomModal from "../../components/chat/ChatRoomModal";
 import useLikeStore from "../../stores/likeStore";
 
+//  =============== ProductDetialPage 컴포넌트  ==============
+//  상품 상세 페이지
+//  URL에서 상품 ID 가져오기
+//  로그인 및 권한 확인
+//  상품 데이터 로딩
+//  UI 렌더링 (이미지, 정보, 댓글등)
+//  액션 핸들러 (수정, 삭제, 찜 , 공유, 신고)
+
 const ProductDetailPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id } = useParams(); //URL 에서 상품 ID 가져오기
+  const navigate = useNavigate(); // 페이지 이동 함수
   const { isAuthenticated = false, user = null } = useAuth() || {};
+  // isAuthenticated = 로그인 여부 / user = 로그인한 사용자 객체
 
   // ✅ WebSocket 훅 추가
   const { connected, subscribeDestination } = useWebSocket();
 
+  //Zustand사용 - 전역상태 관리 라이브러리 (데이터를 여러 컴포넌트 공유가능)
   const productStore = useProductStore();
+
   const {
-    product,
-    loading,
-    fetchProduct,
-    toggleLike,
-    updateProductStatus,
-    deleteProduct,
+    product, //  현재 상품 데이터
+    loading, //  로딩 상태
+    fetchProduct, //  상품 조회 함수
+    toggleLike, //  찜하기 토글 함수
+    updateProductStatus, //  상태 변경 함수
+    deleteProduct, //  삭제 함수
   } = productStore;
 
   const {
@@ -55,9 +66,10 @@ const ProductDetailPage = () => {
   } = useLikeStore();
 
   const { isSeller, isAdmin, canEdit } = useProductPermission(
-    isAuthenticated,
-    user,
-    product
+    // 권한 체크 (커스텀 훅 사용)  - 현재 로그인 한 사용자와 상품 판매자를 비교하여 권한 확인
+    isAuthenticated, //  로그인 여부
+    user, //  로그인 사용자 정보
+    product //  현재 상품 정보
   );
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);

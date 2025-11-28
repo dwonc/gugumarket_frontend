@@ -5,15 +5,21 @@ import Button from "../common/Button";
 
 const CommentItem = ({ comment, productId, replies = [], level = 0 }) => {
   const { isAuthenticated, user } = useAuth();
+  //  로그인 여부, 현재 로그인한 사용자 정보
   const { createComment, updateComment, deleteComment } = useCommentStore();
+  //  댓글 작성 함수 , 댓글 수정 함수 , 댓글 삭제 함수
 
   const [isEditing, setIsEditing] = useState(false);
+  //  수정 모드인지 여부를 저장하는 상태
   const [editContent, setEditContent] = useState(comment.content);
+  //  수정 중인 댓글 내용을 저장하는상태 (초기값: 원래 댓글 내용)
 
   const [isReplying, setIsReplying] = useState(false);
+  //  답글 작성 모드인지 여부를 저장하는 상태
   const [replyContent, setReplyContent] = useState("");
+  //  작성 중인 답글 내용을 저장하는 상태
 
-  //  기본 프로필 이미지
+  //  기본 프로필 이미지  - 사용자의 프로필 이미지가 없을때 부여줄 기본 이미지
   const defaultProfileImage =
     "data:image/svg+xml," +
     encodeURIComponent(
@@ -24,19 +30,23 @@ const CommentItem = ({ comment, productId, replies = [], level = 0 }) => {
         "</svg>"
     );
 
-  // ✅ mine 필드 사용!
+  // comment.mine 필드 사용! ( 댓글 소유자 인지 확인)
   const isOwner = comment.mine;
 
   // 댓글 수정
   const handleUpdate = async () => {
     if (!editContent.trim()) {
+      //  빈 내용 체크 ( 공백만 있는 경우도 걸러냄)
       alert("내용을 입력해주세요.");
       return;
     }
 
     try {
-      await updateComment(comment.id, editContent, productId); // ✅ comment.id
+      await updateComment(comment.id, editContent, productId);
+      //  Zustand Store의 updateComment 함수 호출
+      //  파라미터: (댓글ID, 새로운내용, 상품ID)
       setIsEditing(false);
+      //수정 모드 종료
       alert("✅ 댓글이 수정되었습니다!");
     } catch (error) {
       alert("❌ " + error.message);
@@ -45,10 +55,13 @@ const CommentItem = ({ comment, productId, replies = [], level = 0 }) => {
 
   // 댓글 삭제
   const handleDelete = async () => {
+    //  삭제확인 (취소하면 함수 종료)
     if (!confirm("정말로 삭제하시겠습니까?")) return;
 
     try {
-      await deleteComment(comment.id, productId); // ✅ comment.id
+      await deleteComment(comment.id, productId);
+      //  Zustand Store의 deleteComment 함수 호출
+      //  파라미터(댓글ID, 상품ID)
       alert("✅ 댓글이 삭제되었습니다!");
     } catch (error) {
       alert("❌ " + error.message);
@@ -58,14 +71,20 @@ const CommentItem = ({ comment, productId, replies = [], level = 0 }) => {
   // 대댓글 작성
   const handleReply = async () => {
     if (!replyContent.trim()) {
+      //  빈 내용 체크
       alert("내용을 입력해주세요.");
       return;
     }
 
     try {
-      await createComment(productId, replyContent, comment.id); // ✅ comment.id
+      await createComment(productId, replyContent, comment.id);
+      //  Zustand Store의 createComment 함수 호출해서
+      //  파라미터 (상품ID, 댓글내용, 부모댓글ID)
+      //  comment.id가 있으면 대댓글로 처리됨
       setReplyContent("");
+      // 입력창 초기화
       setIsReplying(false);
+      //  답글 작성 보드 종료
       alert("✅ 답글이 작성되었습니다!");
     } catch (error) {
       alert("❌ " + error.message);

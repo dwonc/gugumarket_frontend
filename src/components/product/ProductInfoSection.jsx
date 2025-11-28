@@ -1,6 +1,10 @@
-// 상품 정보 (제목, 가격, 메타 정보)
+//
+//
+// 상품 정보 (제목, 가격, 메타 정보)를 보여주는 컴포넌트
 
 const ProductInfoSection = ({ product, isAdmin, reportCount }) => {
+  //  Props로 상품 정보를 받아옴
+  //  product = 상품 정보, isAdmin = 관리자여부, reportCount = 신고 건수
   if (!product) return null;
 
   return (

@@ -7,35 +7,41 @@ import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
 
+//
+// 상품 수정 페이지
+//
+
 const ProductEditPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const {
-    product,
-    categories,
-    uploading,
-    loading,
-    error,
-    fetchProduct,
-    fetchCategories,
-    uploadImage,
-    uploadMultipleImages,
-    updateProduct,
+    product, //  현재 상품 데이터 객체
+    categories, //  카테고리 목록 배열
+    uploading, //  이미지 업로드 중 여부(true,false)
+    loading, //  로딩 상태(true, false)
+    error, //에러 메시지(문자열 or NULL)
+    fetchProduct, //  상품 조회 함수: (id) => Promise
+    fetchCategories, //  카테고리 목록 조회 함수: () => Promise
+    uploadImage, //  단일 이미지 업로드: (file) => Promise<url>
+    uploadMultipleImages, //  다중 이미지 업로드: (files[]) =>  Proimse<urls[]>
+    updateProduct, //  상품 수정 : (id, formData) => Promise
   } = useProductStore();
 
   // 폼 데이터
   const [formData, setFormData] = useState({
-    categoryId: "",
-    title: "",
-    price: "",
-    content: "",
-    mainImage: "",
-    additionalImages: [],
-    bankName: "",
-    accountNumber: "",
-    accountHolder: "",
+    categoryId: "", //  카테고리 ID (문자열)
+    title: "", // 상품명
+    price: "", //  가격
+    content: "", // 상품 설명
+    mainImage: "", // 메인 이미지 URL
+    additionalImages: [], //  추가 이미지 URL 이미지 배열
+    bankName: "", //  은행명
+    accountNumber: "", //  계좌번호
+    accountHolder: "", //  예금주
   });
+  //  초기값 : 모든 필드가 비어있는 상태
+  //  setFormData: 이 상태를 업데이트하는 함수
 
   // 이미지 미리보기
   const [mainImagePreview, setMainImagePreview] = useState("");
@@ -50,25 +56,29 @@ const ProductEditPage = () => {
   // 카테고리 목록과 상품 정보 불러오기
   useEffect(() => {
     const loadData = async () => {
+      // 내부 비동기 함수 정의 -> useEffect 자체는 async 함수가 될수 없어서 내부 선언
       try {
-        await fetchCategories();
+        await fetchCategories(); //  카테고리 목록 불러오기
 
-        const data = await fetchProduct(id);
+        const data = await fetchProduct(id); // 상품 정보 불러오기
 
-        const productData = data.product;
+        const productData = data.product; //  서버 응답에서 상품 데이터 추출
 
         // 폼 데이터 설정
         setFormData({
           categoryId: String(productData.categoryId || ""),
-          title: productData.title || "",
-          price: productData.price || "",
-          content: productData.content || "",
-          mainImage: productData.mainImage || "",
+          //categoryId를 문자열로 변환 (select 옵션은 문자열이어야 함)
+          title: productData.title || "", //  상품명
+          price: productData.price || "", //  가격
+          content: productData.content || "", //  상품 설명
+          mainImage: productData.mainImage || "", //  메인 이미지 URL
+          //  추가 이미지 URL 배열
           additionalImages:
             productData.productImages?.map((img) => img.imageUrl) || [],
-          bankName: productData.bankName || "",
-          accountNumber: productData.accountNumber || "",
-          accountHolder: productData.accountHolder || "",
+          //  배열에서 이미지URL만 추출 Optional Chaning (?.)사용 : productImages가 없으면 빈배열)
+          bankName: productData.bankName || "", //  은행명
+          accountNumber: productData.accountNumber || "", //  계좌번호
+          accountHolder: productData.accountHolder || "", //  예금주
         });
 
         // 이미지 미리보기 설정
@@ -113,6 +123,11 @@ const ProductEditPage = () => {
 
     try {
       const imageUrl = await uploadImage(file);
+      //  uploadImage 함수 호출(Zustand Store의 함수 사용)
+      //  내부적으로 POST /api/products/upload/image 요청
+      //  formData로 파일 전송
+      //  서버에서 업로드된 이미지 URL 반환
+      //  예시: "https://example.com/uploads/image123.jpg"
 
       //메인 이미지 교체
       setFormData((prev) => ({ ...prev, mainImage: imageUrl }));
@@ -125,20 +140,23 @@ const ProductEditPage = () => {
 
   // 메인 이미지 제거
   const removeMainImage = () => {
-    setFormData((prev) => ({ ...prev, mainImage: "" }));
+    setFormData((prev) => ({ ...prev, mainImage: "" })); //  formData에서 메인 이미지 제거
     setMainImagePreview("");
-    const input = document.getElementById("mainImage");
+    const input = document.getElementById("mainImage"); //  DOM에서 file input 요소 가져오기
     if (input) input.value = "";
+    //  input이 존재하면 값 초기화  -> 이렇게 해야 같은 파일을 다시 선택할 수 있음
   };
 
   // 추가 이미지 업로드
   const handleAdditionalImagesUpload = async (e) => {
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files); //  선택된 파일들을 배열로 변환
+    //e.target.files는 FileList객체 (배열아님)
+    //Array.from() 으로 진짜 배열로 전환
     if (files.length === 0) return;
 
-    const currentCount = additionalImagePreviews.length;
-    const newCount = files.length;
-    const totalCount = currentCount + newCount;
+    const currentCount = additionalImagePreviews.length; //  현재 업로드된 이미지 개수
+    const newCount = files.length; //새로 추가하려는 이미지 개수
+    const totalCount = currentCount + newCount; // 전체 합계
 
     if (totalCount > 5) {
       alert(
@@ -159,8 +177,13 @@ const ProductEditPage = () => {
 
     try {
       const imageUrls = await uploadMultipleImages(files);
+      //  다중 이미지 업로드 함수 호출
+      //  POST -> /api/produts/upload/images
+      //  서버에서 업로드된 이미지 URL 배열 반환
+      //  예시 ["rurl1.jpg", "url2.jpg", "url3.jpg"]
 
       const updatedImages = [...additionalImagePreviews, ...imageUrls];
+      //  스프레드 연산자로 두 배열 합치기
 
       setFormData((prev) => ({
         ...prev,
@@ -180,7 +203,7 @@ const ProductEditPage = () => {
 
   // 추가 이미지 제거
   const removeAdditionalImages = () => {
-    setFormData((prev) => ({ ...prev, additionalImages: [] }));
+    setFormData((prev) => ({ ...prev, additionalImages: [] })); //  formData에서 추가 이미지 배열 비우기
     setAdditionalImagePreviews([]);
     const input = document.getElementById("additionalImages");
     if (input) input.value = "";
