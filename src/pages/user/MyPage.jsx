@@ -268,6 +268,7 @@ const MyPage = () => {
                 "Content-Type": "application/json",
             };
 
+            //http 헤더에 토큰을 넣는 것
             if (csrfToken && csrfHeader) {
                 headers[csrfHeader] = csrfToken;
             }
