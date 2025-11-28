@@ -1,14 +1,14 @@
 // src/pages/transaction/TransactionDetailPage.jsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../api/axios";
+import transactionApi from "../../api/transactionApi"; // ✅ 변경
 import chatApi from "../../api/chatApi";
 import Navbar from "../../components/common/Navbar";
 import Footer from "../../components/common/Footer";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
-import ChatRoomModal from "../../components/chat/ChatRoomModal"; // ✅ 추가
+import ChatRoomModal from "../../components/chat/ChatRoomModal";
 
 const TransactionDetailPage = () => {
   const { id } = useParams();
@@ -26,7 +26,6 @@ const TransactionDetailPage = () => {
   const [editingDepositor, setEditingDepositor] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ✅ 채팅 모달 상태
   const [chatRoomId, setChatRoomId] = useState(null);
   const [isChatOpen, setChatOpen] = useState(false);
 
@@ -40,7 +39,8 @@ const TransactionDetailPage = () => {
           throw new Error("유효하지 않은 거래 번호입니다.");
         }
 
-        const res = await api.get(`/api/transactions/${transactionId}`);
+        // ✅ transactionApi 사용
+        const res = await transactionApi.getTransactionDetail(transactionId);
         const payload = res.data;
 
         if (!payload || payload.success === false || !payload.transaction) {
@@ -72,7 +72,6 @@ const TransactionDetailPage = () => {
 
   const status = transaction?.status;
 
-  // ✅ 1:1 채팅 시작 (모달 방식)
   const handleStartChat = async () => {
     if (!transaction) {
       alert("거래 정보를 찾을 수 없습니다.");
@@ -84,7 +83,6 @@ const TransactionDetailPage = () => {
       return;
     }
 
-    // 상대방 userId 확인
     let otherUserId;
     if (isSeller) {
       otherUserId = transaction.buyerId;
@@ -98,14 +96,12 @@ const TransactionDetailPage = () => {
     }
 
     try {
-      // 채팅방 생성/조회
       const response = await chatApi.createOrGetChatRoomWithUser(
         transaction.productId,
         otherUserId
       );
 
       if (response.success && response.chatRoom) {
-        // ✅ 모달 열기 (페이지 이동 대신)
         setChatRoomId(response.chatRoom.chatRoomId);
         setChatOpen(true);
       } else {
@@ -141,12 +137,11 @@ const TransactionDetailPage = () => {
 
     try {
       setSubmitting(true);
-      const res = await api.post(
-        `/api/transactions/${transactionId}/depositor`,
-        { depositorName: trimmed }
-      );
 
+      // ✅ transactionApi 사용
+      const res = await transactionApi.updateDepositor(transactionId, trimmed);
       const payload = res.data;
+
       if (!payload || payload.success === false) {
         throw new Error(
           payload?.message || "입금자명 수정 중 오류가 발생했습니다."
@@ -177,7 +172,9 @@ const TransactionDetailPage = () => {
 
     try {
       setSubmitting(true);
-      const res = await api.post(`/api/transactions/${transactionId}/complete`);
+
+      // ✅ transactionApi 사용
+      const res = await transactionApi.completeTransaction(transactionId);
       const payload = res.data;
 
       if (!payload || payload.success === false) {
@@ -205,7 +202,9 @@ const TransactionDetailPage = () => {
 
     try {
       setSubmitting(true);
-      const res = await api.delete(`/api/transactions/${transactionId}`);
+
+      // ✅ transactionApi 사용
+      const res = await transactionApi.cancelTransaction(transactionId);
       const payload = res.data;
 
       if (!payload || payload.success === false) {
@@ -334,7 +333,6 @@ const TransactionDetailPage = () => {
               </h2>
 
               <div className="flex gap-4">
-                {/* 상품 이미지 */}
                 <div className="flex-shrink-0">
                   {transaction.productImage ? (
                     <img
@@ -349,7 +347,6 @@ const TransactionDetailPage = () => {
                   )}
                 </div>
 
-                {/* 상품 상세 */}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-bold text-gray-800 mb-2">
                     {transaction.productTitle}
@@ -391,7 +388,6 @@ const TransactionDetailPage = () => {
                   <span>{formattedTransactionDate}</span>
                 </div>
 
-                {/* 입금자명 */}
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-gray-600">입금자명</span>
                   <div className="flex items-center gap-2">
@@ -442,7 +438,6 @@ const TransactionDetailPage = () => {
                   </div>
                 </div>
 
-                {/* 거래 상태 텍스트 */}
                 <div className="flex justify-between items-center py-2">
                   <span className="text-gray-600">거래 상태</span>
                   {status === "PENDING" && (
@@ -472,7 +467,6 @@ const TransactionDetailPage = () => {
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* 판매자 */}
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm text-gray-600 mb-2">판매자</p>
                   <div className="flex items-center gap-3">
@@ -493,7 +487,6 @@ const TransactionDetailPage = () => {
                   </div>
                 </div>
 
-                {/* 구매자 */}
                 <div className="p-4 bg-green-50 rounded-lg">
                   <p className="text-sm text-gray-600 mb-2">구매자</p>
                   <div className="flex items-center gap-3">
@@ -517,9 +510,8 @@ const TransactionDetailPage = () => {
             </div>
           </div>
 
-          {/* 오른쪽 영역: 결제/계좌/버튼들 */}
+          {/* 오른쪽 영역 */}
           <div className="space-y-6">
-            {/* 결제 정보 */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <h2 className="text-lg font-bold text-gray-800 mb-4">
                 결제 정보
@@ -541,7 +533,6 @@ const TransactionDetailPage = () => {
               </div>
             </div>
 
-            {/* 무통장입금 정보 */}
             {transaction.bankName && (
               <div className="bg-amber-50 rounded-xl shadow-md p-6 border-2 border-amber-200">
                 <h2 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
@@ -571,7 +562,6 @@ const TransactionDetailPage = () => {
               </div>
             )}
 
-            {/* ✅ 1:1 채팅 버튼 */}
             {(isSeller || isBuyer) && (
               <Button
                 variant="primary"
@@ -585,6 +575,7 @@ const TransactionDetailPage = () => {
 
             {/* 액션 버튼들 */}
             <div className="space-y-3">
+              {/* ✅ 판매자 - 거래 완료 버튼 */}
               {isSeller && status === "PENDING" && (
                 <Button
                   variant="primary"
@@ -597,7 +588,8 @@ const TransactionDetailPage = () => {
                 </Button>
               )}
 
-              {isBuyer && status === "PENDING" && (
+              {/* ✅ 판매자 또는 구매자 - 거래 취소 버튼 */}
+              {(isSeller || isBuyer) && status === "PENDING" && (
                 <Button
                   variant="primary"
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold"
@@ -623,6 +615,16 @@ const TransactionDetailPage = () => {
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
               <p className="text-sm text-gray-700">
                 <i className="bi bi-info-circle text-blue-600 mr-1" />
+                {status === "PENDING" &&
+                  "거래 진행 중입니다. 문제가 있으면 거래를 취소할 수 있습니다."}
+                {status === "COMPLETED" && "거래가 완료되었습니다."}
+                {status === "CANCELLED" && "거래가 취소되었습니다."}
+              </p>
+            </div>
+
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <p className="text-sm text-gray-700">
+                <i className="bi bi-info-circle text-blue-600 mr-1" />
                 {isSeller && "입금 확인 후 거래 완료 버튼을 눌러주세요."}
                 {isBuyer &&
                   !isSeller &&
@@ -636,7 +638,6 @@ const TransactionDetailPage = () => {
         </div>
       </div>
 
-      {/* ✅ 채팅 모달 */}
       <ChatRoomModal
         isOpen={isChatOpen}
         chatRoomId={chatRoomId}
