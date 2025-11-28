@@ -2,31 +2,40 @@ import { useState } from "react";
 import { adminApi } from "../../api/adminApi";
 import { handleImageError } from "../../utils/formatters";
 
+//  상태관리
 const ProductTable = ({ products, onRefresh }) => {
   const [searchKeyword, setSearchKeyword] = useState("");
+  //  상품 상태 (전체,판매중,삭제됨 등)을 저장하는 상태
   const [status, setStatus] = useState("");
 
+  //  검색기능
   const handleSearch = () => {
+    // 검색 버튼을 클릭했을때 실행됨
     onRefresh({ keyword: searchKeyword, isDeleted: status });
+    //  부모 컴포넌트의 onRefresh 함수를 호출
+    //  검색어 와 삭제 상태를 전달
   };
 
+  //  엔터키를 눌렀을 때 검색 되도록 하는 함수
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       handleSearch();
     }
   };
 
+  //  삭제 기능
   const handleDelete = async (productId, title) => {
     if (!window.confirm(`"${title}" 상품을 정말 삭제하시겠습니까?`)) {
+      // 삭제 확인 팝업
       return;
     }
 
     try {
-      await adminApi.deleteProduct(productId);
-      alert("상품이 삭제되었습니다.");
-      onRefresh();
+      await adminApi.deleteProduct(productId); // API 호출해서 백엔드에 DELETE 요청
+      alert("상품이 삭제되었습니다."); //  삭제 성공시 알림
+      onRefresh(); //  목록 새로고침 ( 삭제된 상품이 사라지도록 )
     } catch (error) {
-      console.error("상품 삭제 실패:", error);
+      console.error("상품 삭제 실패:", error); // 에러가 발생하면 알림
       alert("상품 삭제에 실패했습니다.");
     }
   };

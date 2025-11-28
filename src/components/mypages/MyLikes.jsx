@@ -2,32 +2,36 @@ import React from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
 
-// 이 코드는 MyPage.jsx에서 사용되던 renderLikes 함수를 컴포넌트화한 것입니다.
-// Props: likes, formatPrice, getProductImageUrl, handleUnlike, navigate
+//
+//
+// 역할: 마이페이지에서 사용자가 찜한 상품 목록을 보여주는 컴포넌트
+// 원래 MyPage.jsx에 있던 renderLikes 함수를 독립적인 컴포넌트로 분리한 것
+
 const MyLikes = ({
-  likes,
-  formatPrice,
-  getProductImageUrl,
-  handleUnlike,
-  navigate,
+  likes, // likes: 찜한 상품 목록 배열
+  formatPrice, // formatPrice: 가격 포맷팅 함수
+  getProductImageUrl, // getProductImageUrl: 이미지 URL 생성 함수
+  handleUnlike, // handleUnlike: 찜 해제 함수
+  navigate, // navigate: 페이지 이동 함수
 }) => {
-  const NO_IMAGE_PLACEHOLDER = getProductImageUrl("");
+  const NO_IMAGE_PLACEHOLDER = getProductImageUrl(""); // 이미지가 없을 때 표시할 플레이스홀더 이미지 URL
 
   // ✅ 상태별 배지 반환 함수
   const getStatusBadge = (status) => {
     switch (status) {
-      case "RESERVED":
+      case "RESERVED": // 예약중 상태
         return (
           <span className="px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded-md">
             예약중
           </span>
         );
-      case "SALE":
+      case "SALE": // 판매중 상태
         return (
           <span className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-md">
             판매중
           </span>
         );
+      // SOLD_OUT은 오버레이로 표시하므로 여기서는 배지 없음
       default:
         return null;
     }

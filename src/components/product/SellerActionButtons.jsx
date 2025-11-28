@@ -1,32 +1,42 @@
-//판매자용 버튼들 (상태 변경, 수정, 삭제)
+//
+//
+//  판매자용 액션 버튼들 (상태 변경, 수정, 삭제)
+//  상품을 등록한 판매자나 관리자만 볼 수 있는 관리 버튼들
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../common/Button";
 
 const SellerActionButtons = ({
-  product,
-  isAdmin,
-  isSeller,
-  onStatusSave,
-  onDelete,
+  //  Props로 정보를 받음
+  product, //  상품 정보 객체
+  isAdmin, //  관리자 여부
+  isSeller, //  판매자 여부
+  onStatusSave, //  상품 상태 변경 저장 핸들러
+  onDelete, //  상품 삭제 핸들러
 }) => {
   const navigate = useNavigate();
   const [selectedStatus, setSelectedStatus] = useState("");
+  //  현재 선택된 상품 상태를 저장하는 로컬 상태
+  //  SALE 판매중 / RESERVED 예약중 / SOLD_OUT 판매완료
 
   useEffect(() => {
     if (product?.status) {
-      setSelectedStatus(product.status);
+      //  product가 있고 status가 있으면
+      setSelectedStatus(product.status); //  현재 상품의 상태를 선택된 상태로 설정
     }
-  }, [product]);
+  }, [product]); //  product가 변경될 때마다 실행
 
   const handleStatusSave = async () => {
     if (selectedStatus === product.status) {
+      //  선택된 상태가 현재 상태와 같으면 (변경된게 없다면)
       alert("변경된 상태가 없습니다.");
       return;
     }
 
     const statusText = {
+      //  상태 코드를 사용자가 읽기 쉬운 텍스트로 변환
+      //  객체의 [키] 표기법으로 동적으로 값을 가져옴
       SALE: "🟢 판매중",
       RESERVED: "🟡 예약중",
       SOLD_OUT: "🔴 판매완료",
@@ -38,6 +48,8 @@ const SellerActionButtons = ({
     }
 
     await onStatusSave(selectedStatus);
+    //  부모 컴포넌트에서 전달받은 상태 변경 함수 실행
+    //  서버에 상태 변경 요청
   };
 
   const handleDelete = async () => {
@@ -48,7 +60,7 @@ const SellerActionButtons = ({
     ) {
       return;
     }
-    await onDelete();
+    await onDelete(); //  확인을 누르면 부모 컴포넌트의 삭제 함수 실행
   };
 
   if (!product) return null;

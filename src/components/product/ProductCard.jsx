@@ -1,7 +1,12 @@
 import { Link } from "react-router-dom";
-import useLikeStore from "../../stores/likeStore";
-import useAuthStore from "../../stores/authStore";
+import useLikeStore from "../../stores/likeStore"; // 찜하기 상태 관리
+import useAuthStore from "../../stores/authStore"; // 로그인 상태 관리
 
+/**
+ * 이미지가 없을 때 보여줄 기본 플레이스홀더 이미지
+ * SVG를 Base64로 인코딩하여 Data URI로 변환
+ * - 회색 배경에 "No Image" 텍스트 표시
+ */
 const NO_IMAGE_PLACEHOLDER =
   "data:image/svg+xml;base64," +
   btoa(
@@ -17,28 +22,41 @@ const ProductCard = ({ product }) => {
 
   // 🔥 Zustand에서 찜 상태 가져오기
   const isLiked = useLikeStore((state) => state.isLiked(product.productId));
+  //  isLiked = 현재 상품이 찜이 되어 있는지 여부 (true/false)
   const likeCount = useLikeStore((state) =>
     state.getLikeCount(product.productId)
   );
+  //  likeCount = 현재 상품의 찜 개수
+
   const toggleLike = useLikeStore((state) => state.toggleLike);
+  //  찜하기/취소 함수
 
   const handleLikeToggle = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); //상품 상세 페이지로 이동 막기 ( 이벤트 버블링 방지)
     e.stopPropagation();
+    //  부모 요소(Link)로 이벤트 전파 막기
+    //  이게 없으면 찜 버튼을 눌렀을 때 상세 페이지로 이동됨
 
     if (!isAuthenticated) {
+      //  window.confirm: 확인/취소 선택 팝업 ( true = 확인, false = 취소)
       if (
         window.confirm(
           "로그인이 필요한 기능입니다.\n로그인 페이지로 이동하시겠습니까?"
         )
       ) {
         window.location.href = "/login";
+        //  window.location.href : 페이지 새로고침과 함께 이동
+        //  navigate()를 쓰지 않는 이유 : useNavigate()는 훅이라 조건부로 사용이 불가하기 때문에
       }
       return;
     }
 
     try {
-      await toggleLike(product.productId);
+      await toggleLike(product.productId); //찜하기 API 호출
+      //  toggleLike 함수 실행
+      //  이미 찜했으면 -> 취소
+      //  안했으면 -> 찜 하기
+      // 자동으로 zustand store 업데이트 -> isLiked, likeCount 변경
     } catch (error) {
       console.error("찜하기 처리 실패:", error);
       alert("찜하기 처리 중 오류가 발생했습니다.");
@@ -46,6 +64,7 @@ const ProductCard = ({ product }) => {
   };
 
   const formatPrice = (price) => {
+    //  가격 포메팅 함수 ( 숫자를 한국 통화 형식으로 변환 1000 - > "1,000")
     return price?.toLocaleString("ko-KR") || "0";
   };
 
