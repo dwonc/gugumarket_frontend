@@ -15,7 +15,7 @@ const InputField = memo(({
                              type = "text",
                              placeholder,
                              isRequired = true,
-                             rightContent = null,
+                             rightContent = null, // 우측에 추가될 컴포넌트 (예: 중복확인 버튼)
                              readOnly = false,
                              value,
                              error,
@@ -50,7 +50,7 @@ const InputField = memo(({
 
 const SignupPage = () => {
     const navigate = useNavigate();
-
+    // 폼의 모든 입력 값을 관리하는 상태
     const [formData, setFormData] = useState({
         userName: "",
         email: "",
@@ -62,17 +62,19 @@ const SignupPage = () => {
         address: "",
         addressDetail: "",
     });
-
+    // 필드별 유효성 검사 오류 메시지를 저장하는 상태
     const [errors, setErrors] = useState({});
+    // 폼 제출 중 상태
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // 전역적인 성공/경고/에러 메시지 상태
     const [message, setMessage] = useState(null);
-
+    // 아이디 중복 확인 결과를 저장하는 상태
     const [usernameCheckStatus, setUsernameCheckStatus] = useState({
         isChecked: false,
         isDuplicate: false,
         message: "",
     });
-
+    // 약관 동의 상태
     const [agreements, setAgreements] = useState({
         agreeTerms: false,
         agreePrivacy: false,
@@ -81,6 +83,7 @@ const SignupPage = () => {
     // Daum Postcode API 스크립트 로드 (로직 유지)
     useEffect(() => {
         const script = document.createElement("script");
+        // 외부 주소 검색 API 스크립트 로드
         script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
         document.head.appendChild(script);
     }, []);
@@ -113,6 +116,7 @@ const SignupPage = () => {
     const handleAgreementChange = useCallback((e) => {
         const { id, checked } = e.target;
         if (id === 'agree-all') {
+            // '전체 동의' 체크 시 모든 필수 약관 상태를 일괄 변경
             setAgreements({ agreeTerms: checked, agreePrivacy: checked });
         } else {
             setAgreements(prev => ({ ...prev, [id]: checked }));
@@ -121,10 +125,11 @@ const SignupPage = () => {
 
     // ✅ 에러 메시지 렌더링 함수 (로직 유지)
     const renderError = useCallback((fieldName) => {
+        // errors 객체에 해당 필드의 에러 메시지가 있을 경우 JSX로 반환
         return errors[fieldName] ? (
             <p className="mt-1 text-sm text-red-500">{errors[fieldName]}</p>
         ) : null;
-    }, [errors]);
+    }, [errors]); //errors가 나오면 함수 재생성
 
 // 아이디 중복 체크 핸들러 - 수정된 버전
     const handleCheckUsername = useCallback(async () => {
@@ -165,7 +170,7 @@ const SignupPage = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [formData.userName]);
+    }, [formData.userName]); // formData.userName이 변경될 때만 함수 재생성
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
@@ -255,9 +260,10 @@ const SignupPage = () => {
 
         new window.daum.Postcode({
             oncomplete: function(data) {
+                // 주소 유형에 따라 기본 주소 추출
                 var addr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
                 var extraAddr = '';
-
+                // 도로명 주소일 경우 참고 항목(extraAddr) 구성
                 if(data.userSelectedType === 'R'){
                     if(data.bname !== '' && /[동|로|가]$/g.test(data.bname)){
                         extraAddr += data.bname;
@@ -266,7 +272,7 @@ const SignupPage = () => {
                         extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
                     }
                 }
-
+                // formData 상태 업데이트
                 setFormData(prev => ({
                     ...prev,
                     postalCode: data.zonecode,
