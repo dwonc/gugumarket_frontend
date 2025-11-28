@@ -114,7 +114,7 @@ const ProductTable = ({ products, onRefresh }) => {
                     {product.price?.toLocaleString()}원
                   </p>
                   <p className="text-sm text-gray-500 truncate">
-                    판매자: {product.user?.nickname || "알 수 없음"} | 등록일:{" "}
+                    판매자: {product.seller || "알 수 없음"} | 등록일:{" "}
                     {new Date(product.createdDate).toLocaleDateString("ko-KR")}
                   </p>
                 </div>
