@@ -7,6 +7,15 @@ const chatApi = {
     return response.data; // { success, chatRoom, message? }
   },
 
+  // ✅ api → axios로 수정
+  createChatRoomWithUser: async (productId, otherUserId) => {
+    const response = await axios.post("/api/chat/rooms", {
+      productId,
+      otherUserId,
+    });
+    return response.data;
+  },
+
   // 판매내역에서 "문의하기" 누를 때: 상품 + 상대 유저 기준
   createOrGetChatRoomWithUser: async (productId, otherUserId) => {
     const response = await axios.post("/api/chat/rooms/with-user", {

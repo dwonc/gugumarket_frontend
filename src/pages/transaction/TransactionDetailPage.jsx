@@ -2,12 +2,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/axios";
-import chatApi from "../../api/chatApi"; // ✅ 추가
+import chatApi from "../../api/chatApi";
 import Navbar from "../../components/common/Navbar";
 import Footer from "../../components/common/Footer";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
+import ChatRoomModal from "../../components/chat/ChatRoomModal"; // ✅ 추가
 
 const TransactionDetailPage = () => {
   const { id } = useParams();
@@ -25,8 +26,9 @@ const TransactionDetailPage = () => {
   const [editingDepositor, setEditingDepositor] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ✅ 채팅 시작 중 상태
-  const [startingChat, setStartingChat] = useState(false);
+  // ✅ 채팅 모달 상태
+  const [chatRoomId, setChatRoomId] = useState(null);
+  const [isChatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     const fetchTransaction = async () => {
@@ -70,69 +72,52 @@ const TransactionDetailPage = () => {
 
   const status = transaction?.status;
 
-  // ✅ 1:1 채팅 시작
+  // ✅ 1:1 채팅 시작 (모달 방식)
   const handleStartChat = async () => {
     if (!transaction) {
       alert("거래 정보를 찾을 수 없습니다.");
-      console.error("❌ transaction이 null/undefined");
       return;
     }
 
     if (!transaction.productId) {
       alert("상품 정보를 찾을 수 없습니다.");
-      console.error("❌ transaction.productId가 없음:", transaction);
       return;
     }
 
-    // ✅ 상대방 userId 확인
+    // 상대방 userId 확인
     let otherUserId;
     if (isSeller) {
-      // 판매자면 구매자와 대화
       otherUserId = transaction.buyerId;
     } else if (isBuyer) {
-      // 구매자면 판매자와 대화
       otherUserId = transaction.sellerId;
     }
 
     if (!otherUserId) {
       alert("상대방 정보를 찾을 수 없습니다.");
-      console.error("❌ otherUserId가 없음:", {
-        isSeller,
-        isBuyer,
-        transaction,
-      });
       return;
     }
 
     try {
-      setStartingChat(true);
-
-      // ✅ 상대방과 채팅방 생성/조회
-      const response = await chatApi.createChatRoomWithUser(
+      // 채팅방 생성/조회
+      const response = await chatApi.createOrGetChatRoomWithUser(
         transaction.productId,
         otherUserId
       );
 
       if (response.success && response.chatRoom) {
-        // 채팅방으로 이동
-        navigate(`/chat/${response.chatRoom.chatRoomId}`);
+        // ✅ 모달 열기 (페이지 이동 대신)
+        setChatRoomId(response.chatRoom.chatRoomId);
+        setChatOpen(true);
       } else {
         throw new Error(response.message || "채팅방 생성에 실패했습니다.");
       }
     } catch (err) {
-      console.error("=== 채팅 시작 실패 ===");
-      console.error("에러:", err);
-      console.error("에러 응답:", err.response?.data);
-      console.error("에러 상태:", err.response?.status);
-
-      // 백엔드 에러 메시지 확인
+      console.error("=== 채팅 시작 실패 ===", err);
       const errorMessage =
         err.response?.data?.message ||
         err.message ||
         "채팅을 시작할 수 없습니다.";
       alert(errorMessage);
-    } finally {
-      setStartingChat(false);
     }
   };
 
@@ -586,25 +571,15 @@ const TransactionDetailPage = () => {
               </div>
             )}
 
-            {/* ✅ 1:1 채팅 버튼 추가 */}
+            {/* ✅ 1:1 채팅 버튼 */}
             {(isSeller || isBuyer) && (
               <Button
                 variant="primary"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2"
                 onClick={handleStartChat}
-                disabled={startingChat}
               >
-                {startingChat ? (
-                  <>
-                    <i className="bi bi-hourglass-split animate-spin" />
-                    <span>채팅방 여는 중...</span>
-                  </>
-                ) : (
-                  <>
-                    <i className="bi bi-chat-dots-fill" />
-                    <span>{isSeller ? "구매자" : "판매자"}와 1:1 대화</span>
-                  </>
-                )}
+                <i className="bi bi-chat-dots-fill" />
+                <span>{isSeller ? "구매자" : "판매자"}와 1:1 대화</span>
               </Button>
             )}
 
@@ -660,6 +635,13 @@ const TransactionDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* ✅ 채팅 모달 */}
+      <ChatRoomModal
+        isOpen={isChatOpen}
+        chatRoomId={chatRoomId}
+        onClose={() => setChatOpen(false)}
+      />
 
       <Footer />
     </>
