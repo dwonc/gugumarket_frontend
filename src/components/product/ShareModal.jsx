@@ -55,7 +55,7 @@ const ShareModal = ({ isOpen, onClose, product }) => {
             name: '카카오톡',
             icon: 'bi-chat-fill',
             color: 'bg-yellow-400 hover:bg-yellow-500',
-            available: typeof window !== 'undefined' && window.Kakao, // 카카오톡 공유 가능 여부 확인 (window 객체 및 Kakao 객체 존재 여부 체크)
+            available: typeof window !== 'undefined' && window.Kakao,
         },
         {
             id: 'instagram',
