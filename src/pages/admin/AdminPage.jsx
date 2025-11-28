@@ -173,7 +173,16 @@ const AdminPage = () => {
               <div className="text-right">
                 <p className="text-sm opacity-75">마지막 로그인</p>
                 <p className="text-lg font-semibold">
-                  {formatDateTime(qna.createdDate)}
+                  {/* ✅ 수정: 현재 시간 또는 user의 lastLoginAt 사용 */}
+                  {user?.lastLoginAt
+                    ? formatDateTime(user.lastLoginAt)
+                    : new Date().toLocaleDateString("ko-KR", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                 </p>
               </div>
             </div>
