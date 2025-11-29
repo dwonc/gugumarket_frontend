@@ -276,68 +276,70 @@ const MapPage = () => {
         const markerContent = document.createElement("div");
         markerContent.className = "egg-marker";
         markerContent.style.opacity = style.opacity;
+        markerContent.setAttribute("data-product-id", product.productId); // ⭐ 추가
         markerContent.innerHTML = `
-          <div style="
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: ${product.status === "SOLD" ? "not-allowed" : "pointer"};
-          ">
-            ${
-              style.badge
-                ? `
-              <div style="
-                position: absolute;
-                top: -5px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: ${style.badgeBg};
-                color: white;
-                padding: 2px 8px;
-                border-radius: 10px;
-                font-weight: bold;
-                font-size: 10px;
-                white-space: nowrap;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                z-index: 10;
-              ">
-                ${style.badge}
-              </div>
-            `
-                : ""
-            }
-            
-            <img 
-              src="${
-                isHovered ? "/images/egg-cracked.png" : "/images/egg-normal.png"
-              }" 
-              alt="egg" 
-              style="
-                width: 50px;
-                height: 50px;
-                object-fit: contain;
-                filter: ${style.filter} drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-                transition: transform 0.3s ease;
-                transform: ${isHovered ? "scale(1.2)" : "scale(1)"};
-              "
-            />
-            
+        <div style="
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          cursor: ${product.status === "SOLD" ? "not-allowed" : "pointer"};
+        ">
+          ${
+            style.badge
+              ? `
             <div style="
-              background: ${style.bgColor};
+              position: absolute;
+              top: -5px;
+              left: 50%;
+              transform: translateX(-50%);
+              background: ${style.badgeBg};
               color: white;
-              padding: 4px 8px;
-              border-radius: 12px;
+              padding: 2px 8px;
+              border-radius: 10px;
               font-weight: bold;
-              font-size: 12px;
-              margin-top: -5px;
-              box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+              font-size: 10px;
               white-space: nowrap;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+              z-index: 10;
             ">
-              ${(product.price / 10000).toFixed(0)}만원
+              ${style.badge}
             </div>
+          `
+              : ""
+          }
+          
+          <img 
+            class="egg-image"
+            src="${
+              isHovered ? "/images/egg-cracked.png" : "/images/egg-normal.png"
+            }" 
+            alt="egg" 
+            style="
+              width: 50px;
+              height: 50px;
+              object-fit: contain;
+              filter: ${style.filter} drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+              transition: transform 0.3s ease;
+              transform: ${isHovered ? "scale(1.2)" : "scale(1)"};
+            "
+          />
+          
+          <div style="
+            background: ${style.bgColor};
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 12px;
+            margin-top: -5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            white-space: nowrap;
+          ">
+            ${(product.price / 10000).toFixed(0)}만원
           </div>
-        `;
+        </div>
+      `;
 
         const customOverlay = new window.kakao.maps.CustomOverlay({
           position: position,
@@ -374,10 +376,37 @@ const MapPage = () => {
 
     setMarkers(newMarkers);
 
+    // ⚠️ 초기 로딩이나 필터 변경 시에만 bounds 조정
     if (newMarkers.length > 0 && !radiusFilter) {
       map.setBounds(bounds);
     }
-  }, [map, filteredProducts, radiusFilter, hoveredProduct]);
+  }, [map, filteredProducts, radiusFilter]); // ⭐ hoveredProduct 제거!
+
+  // ⭐ 호버 시 마커 이미지만 업데이트
+  useEffect(() => {
+    if (!hoveredProduct) {
+      // 모든 마커를 normal 상태로
+      document.querySelectorAll(".egg-image").forEach((img) => {
+        img.src = "/images/egg-normal.png";
+        img.style.transform = "scale(1)";
+      });
+      return;
+    }
+
+    // 호버된 마커만 cracked 상태로
+    document.querySelectorAll(".egg-marker").forEach((marker) => {
+      const productId = marker.getAttribute("data-product-id");
+      const img = marker.querySelector(".egg-image");
+
+      if (productId == hoveredProduct.productId) {
+        img.src = "/images/egg-cracked.png";
+        img.style.transform = "scale(1.2)";
+      } else {
+        img.src = "/images/egg-normal.png";
+        img.style.transform = "scale(1)";
+      }
+    });
+  }, [hoveredProduct]);
 
   // 마커 생성 트리거
   useEffect(() => {
