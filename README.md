@@ -130,7 +130,7 @@ UserDetailPage	최동원
 ErrorPage	최동원
 ChatlistPage 최동원
 
-📌 프로젝트 구조도 (원하면 추가로 그려줌)
+📌 프로젝트 구조도
 gugumarket/
  ├── backend/
  │    ├── controller/
