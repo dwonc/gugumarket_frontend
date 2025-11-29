@@ -170,7 +170,7 @@ Backend 팀원
 
 이름	담당
 
-김보민	CategoryController, MainController
+김보민 MapController,	CategoryController, MainController
 김동민	CommentController, PurchaseController
 박성훈	ImageController, QnaController
 김봉환	LikeController, ProductController, TransactionController
@@ -181,7 +181,7 @@ Frontend 팀원
 
 페이지	담당
 
-MainPage / MapPage	김보민
+MapPage / MainPage / MapPage	김보민
 SignupPage	신의진
 ProductDetail / Write / Edit / 댓글 UI	김봉환
 Purchase / PurchaseComplete / TransactionDetail	김동민
