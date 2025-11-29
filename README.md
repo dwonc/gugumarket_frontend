@@ -93,7 +93,7 @@ WebSocket(STOMP)
 
 Spring Security & JWT 인증 전체 구현
 
-AdminController, NotificationController 구현
+ChatController, AdminController, AuthController, NotificationController 구현
 
 실시간 1:1 채팅 Front + WebSocket 연동
 
