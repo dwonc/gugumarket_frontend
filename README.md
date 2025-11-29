@@ -182,12 +182,12 @@ Frontend 팀원
 페이지	담당
 
 KakaoCallbackPage / MapPage / MainPage / MapPage	김보민
-SignupPage	신의진
+SignupPage	/ UserDetail 신의진
 ProductDetail / Write / Edit / 댓글 UI	김봉환
 Purchase / PurchaseComplete / TransactionDetail	김동민
 MyPage	신의진
 QnA List / Form	박성훈
-Admin / UserDetail / Notification / Error / ChatList	최동원
+Admin / Notification / Error / ChatList / ChatModal 최동원
 
 
 
