@@ -7,7 +7,6 @@ import Navbar from "../../components/common/Navbar";
 import Footer from "../../components/common/Footer";
 import Loading from "../../components/common/Loading";
 import ErrorMessage from "../../components/common/ErrorMessage";
-import Button from "../../components/common/Button";
 import UserProfile from "../../components/user/UserProfile";
 import UserLevelBadge from "../../components/user/UserLevelBadge";
 // 마이페이지 각 탭 컴포넌트들을 분리하여 import
@@ -20,23 +19,7 @@ import {
     formatDateTime,
     formatPrice,
     getImageUrl,
-    getTransactionStatus,
 } from "../../utils/formatters";
-
-// API 기본 URL 설정 (환경변수 또는 기본값 사용)
-const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
-// 이미지가 없을 때 표시할 플레이스홀더 SVG
-const NO_IMAGE_PLACEHOLDER =
-    "data:image/svg+xml;base64," +
-    btoa(
-        '<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">' +
-        '<rect width="100%" height="100%" fill="#6B4F4F"/>' +
-        '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" ' +
-        'font-family="sans-serif" font-size="16" fill="#FFFFFF">No Image</text>' +
-        "</svg>"
-    );
 
 const MyPage = () => {
     const navigate = useNavigate();
@@ -58,18 +41,18 @@ const MyPage = () => {
     const [levelInfo, setLevelInfo] = useState(null);
 
     // 컴포넌트 마운트 시 localStorage에서 인증 정보 확인
-    useEffect(() => {
-        const authStorage = localStorage.getItem("auth-storage");
-        const { accessToken, isAuthenticated: storeAuth } = useAuthStore.getState();
-
-        if (authStorage) {
-            try {
-                const parsed = JSON.parse(authStorage);
-            } catch (e) {
-                console.error("❌ localStorage 파싱 실패:", e);
-            }
-        }
-    }, [isAuthenticated, location]);
+    // Zustand가 이미 localStorage 관리를 처리함
+    // useEffect(() => {
+    //     const authStorage = localStorage.getItem("auth-storage");
+    //
+    //     if (authStorage) {
+    //         try {
+    //             JSON.parse(authStorage); // 파싱 테스트만 수행
+    //         } catch (e) {
+    //             console.error("❌ localStorage 파싱 실패:", e);
+    //         }
+    //     }
+    // }, [isAuthenticated, location]);
 
     /**
      * 마이페이지 데이터 불러오기
@@ -376,6 +359,19 @@ const MyPage = () => {
                 <Navbar />
                 <main className="flex-grow flex items-center justify-center">
                     <Loading size="lg" text="마이페이지 정보를 불러오는 중..." />
+                </main>
+                <Footer />
+            </div>
+        );
+    }
+
+    // 에러 발생 시 에러 메시지 표시
+    if (error) {
+        return (
+            <div className="min-h-screen flex flex-col">
+                <Navbar />
+                <main className="flex-grow flex items-center justify-center">
+                    <ErrorMessage message={error} />
                 </main>
                 <Footer />
             </div>
