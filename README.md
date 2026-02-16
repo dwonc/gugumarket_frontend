@@ -166,34 +166,33 @@ ChatRoom Modal / ChatList Page / Admin Page / LoginPage / Error Page 개발
 
 ---
 
-Backend 팀원
+Backend 팀원<br>
 
-이름	담당
+이름	담당<br>
 
-김보민 KakaoAuthController, MapController,	CategoryController, MainController
-김동민	CommentController, PurchaseController
-박성훈	ImageController, QnaController
-김봉환	LikeController, ProductController, TransactionController
-신의진	MypageController, UserController
+김보민 KakaoAuthController, MapController,	CategoryController, MainController<br>
+김동민	CommentController, PurchaseController<br>
+박성훈	ImageController, QnaController<br>
+김봉환	LikeController, ProductController, TransactionController<br>
+신의진	MypageController, UserController<br>
 
+Frontend 팀원<br>
 
-Frontend 팀원
+페이지	담당<br>
 
-페이지	담당
-
-KakaoCallbackPage / MapPage / MainPage / MapPage	김보민
-SignupPage	/ UserDetail 신의진
-ProductDetail / Write / Edit / 댓글 UI	김봉환
-Purchase / PurchaseComplete / TransactionDetail	김동민
-MyPage	신의진
-QnA List / Form	박성훈
-Admin / Notification / Error / ChatList / ChatModal 최동원
+KakaoCallbackPage / MapPage / MainPage / MapPage	김보민<br>
+SignupPage	/ UserDetail 신의진<br>
+ProductDetail / Write / Edit / 댓글 UI	김봉환<br>
+Purchase / PurchaseComplete / TransactionDetail	김동민<br>
+MyPage	신의진<br>
+QnA List / Form	박성훈<br>
+Admin / Notification / Error / ChatList / ChatModal 최동원<br>
 
 
 
 ---
 
-🔧 최동원이 직접 해결한 주요 버그 내역 (Git 커밋 기반)
+🔧 직접 해결한 주요 버그 내역 (Git 커밋 기반)
 
 🔹 1. 실시간 채팅/알림 버그
 
